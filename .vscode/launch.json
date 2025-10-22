@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "llama-factory-debug",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/root/miniconda3/envs/llamafactory/bin/llamafactory-cli",
+            "args": [
+                "train",
+                "examples/train_lora/llama3_lora_sft.yaml",
+                "model_name_or_path=/root/LLaMA-Factory/models/Meta-Llama-3-8B-Instruct"
+            ],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "console": "integratedTerminal",
+            "justMyCode": false,
+        }
+    ]
+}
