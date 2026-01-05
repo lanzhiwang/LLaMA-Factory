@@ -20,4 +20,16 @@ output_dir=saves/llama3-8b/lora/sft \
 learning_rate=1e-5 \
 logging_steps=1
 
+#######################################################################
+
+llamafactory-cli train examples/train_lora/qwen3_lora_sft.yaml \
+model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507
+
+CUDA_VISIBLE_DEVICES=1 llamafactory-cli train examples/train_lora/qwen3_lora_sft.yaml \
+model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507
+
+CUDA_VISIBLE_DEVICES=1,2 llamafactory-cli train examples/train_lora/qwen3_lora_sft.yaml \
+model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507
+
+
 ```

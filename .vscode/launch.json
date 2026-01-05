@@ -11,11 +11,11 @@
             "program": "/root/miniconda3/envs/llamafactory/bin/llamafactory-cli",
             "args": [
                 "train",
-                "examples/train_lora/llama3_lora_sft.yaml",
-                "model_name_or_path=/root/LLaMA-Factory/models/Meta-Llama-3-8B-Instruct"
+                "examples/train_lora/qwen3_lora_sft.yaml",
+                "model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507"
             ],
             "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
+                "CUDA_VISIBLE_DEVICES": "1"
             },
             "console": "integratedTerminal",
             "justMyCode": false,

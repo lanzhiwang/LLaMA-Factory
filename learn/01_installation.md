@@ -52,10 +52,11 @@ $
 
 $ pwd
 /root/LLaMA-Factory/models/Meta-Llama-3-8B-Instruct
-
 $ modelscope download --model LLM-Research/Meta-Llama-3-8B-Instruct --local_dir ./
+
 $ modelscope download --model llava-hf/llava-1.5-7b-hf --local_dir ./
 $ modelscope download --model Qwen/Qwen3-32B --local_dir ./
+$ modelscope download --model Qwen/Qwen3-4B-Instruct-2507 --local_dir ./
 
 find . -name __pycache__ -exec rm -rf {} \;
 find . -name .DS_Store -exec rm -rf {} \;
