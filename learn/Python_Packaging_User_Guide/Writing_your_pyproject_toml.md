@@ -27,7 +27,7 @@
 > 值得注意的是, [Poetry](https://python-poetry.org/) 是一个例外, 在 2.0 版本(2025 年 1 月 5 日发布)之前, 它不使用 `[project]` 表, 而是使用 `[tool.poetry]` 表. 2.0 版本则同时支持这两种方式. 此外, [setuptools](https://setuptools.pypa.io/) 构建后端同时支持 `[project]` 表和 `setup.cfg` 或 `setup.py` 中的旧格式.
 >
 > For new projects, use the `[project]` table, and keep `setup.py` only if some programmatic configuration is needed (such as building C extensions), but the `setup.cfg` and `setup.py` formats are still valid. See [Is setup.py deprecated?](https://packaging.python.org/en/latest/discussions/setup-py-deprecated/#setup-py-deprecated).
-> 对于新项目, 请使用 `[project]` 表, 仅当需要某些程序化配置(例如构建 C 扩展)时才保留 `setup.py` 文件, 但 `setup.cfg` 和 `setup.py` 格式仍然有效. 请参阅 [setup.py 是否已弃用？](https://packaging.python.org/en/latest/discussions/setup-py-deprecated/#setup-py-deprecated)
+> 对于新项目, 请使用 `[project]` 表, 仅当需要某些程序化配置(例如构建 C 扩展)时才保留 `setup.py` 文件, 但 `setup.cfg` 和 `setup.py` 格式仍然有效. 请参阅 [setup.py 是否已弃用? ](https://packaging.python.org/en/latest/discussions/setup-py-deprecated/#setup-py-deprecated)
 
 ## Declaring the build backend
 声明构建后端
