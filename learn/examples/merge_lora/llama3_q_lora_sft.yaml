@@ -1,0 +1,20 @@
+# QLoRA 是一种在 4-bit 量化模型基础上使用 LoRA 方法进行训练的技术.
+# 它在极大地保持了模型性能的同时大幅减少了显存占用和推理时间.
+# 警告
+# 不要使用量化模型或设置量化位数 quantization_bit
+# 指定 finetuning_type 参数
+
+### model
+model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct
+adapter_name_or_path: saves/llama3-8b/lora/sft
+template: llama3
+trust_remote_code: true
+
+### export
+export_dir: output/llama3_qlora_sft
+export_size: 5
+export_device: cpu  # choices: [cpu, auto]
+export_legacy_format: false
+
+# 指定 finetuning_type 参数
+finetuning_type: lora
