@@ -1,9 +1,14 @@
 # 环境准备
 
 ```bash
-conda create --name llamafactory python=3.10 -y
+
+conda env list
+conda create --name llamafactory python=3.12 -y
+
 conda activate llamafactory
+
 conda deactivate
+conda env remove -n llamafactory -y
 
 # 调试时选择 python 解释器
 Python: Select Interpreter
