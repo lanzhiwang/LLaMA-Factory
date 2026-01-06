@@ -70,6 +70,10 @@ def read_args(args: dict[str, Any] | list[str] | None = None) -> dict[str, Any] 
     if args is not None:
         return args
 
+    """
+    print(sys.argv)
+    ['/root/miniconda3/envs/llamafactory/bin/llamafactory-cli', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507']
+    """
     if sys.argv[1].endswith(".yaml") or sys.argv[1].endswith(".yml"):
         override_config = OmegaConf.from_cli(sys.argv[2:])
         dict_config = OmegaConf.load(Path(sys.argv[1]).absolute())
