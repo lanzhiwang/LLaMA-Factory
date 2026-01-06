@@ -64,7 +64,17 @@ def launch():
     # 3. 命令解析逻辑 (Sub-command Dispatching)
     # [为什么要这么写]: 通过 pop(1) 提取子命令(如 train/api).
     # [解决的问题]: 实现了类似 git 或 docker 的多级指令结构, 让一个入口文件可以管理整个微调生命周期.
+    """
+    print(sys.argv)
+    ['/root/miniconda3/envs/llamafactory/bin/llamafactory-cli', 'train', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507']
+    """
     command = sys.argv.pop(1) if len(sys.argv) > 1 else "help"
+    """
+    print(command)
+    train
+    print(sys.argv)
+    ['/root/miniconda3/envs/llamafactory/bin/llamafactory-cli', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507']
+    """
 
     # 4. 强制分布式加速策略 (Force Distributed Strategy)
     if is_env_enabled("USE_MCA"):  # force use torchrun
@@ -76,6 +86,18 @@ def launch():
     # [解决的问题]: 手动写 `torchrun --nproc_per_node=8 ...` 极其繁琐且易错.
     # 这里通过检测 GPU 数量(get_device_count() > 1)并排除 Ray 等框架,
     # 实现"自动判断、自动封装、自动启动"分布式任务, 用户只需输入 `llamafactory-cli train`.
+    """
+    print(command == "train")
+    True
+    is_env_enabled("FORCE_TORCHRUN")
+    False
+    print(get_device_count())
+    2
+    print(not use_ray())
+    True
+    print(not use_kt())
+    True
+    """
     if command == "train" and (
         is_env_enabled("FORCE_TORCHRUN") or (get_device_count() > 1 and not use_ray() and not use_kt())
     ):
@@ -99,6 +121,26 @@ def launch():
         rdzv_id = os.getenv("RDZV_ID")
         min_nnodes = os.getenv("MIN_NNODES")
         max_nnodes = os.getenv("MAX_NNODES")
+        """
+        print(nnodes)
+        1
+        print(node_rank)
+        0
+        print(nproc_per_node)
+        2
+        print(master_addr)
+        127.0.0.1
+        print(master_port)
+        40859
+        print(max_restarts)
+        0
+        print(rdzv_id)
+        None
+        print(min_nnodes)
+        None
+        print(max_nnodes)
+        None
+        """
 
         # 7. 环境沙箱化 (Environment Sandboxing)
         # [为什么要这么写]: 使用 deepcopy 复制环境变量.
@@ -111,6 +153,75 @@ def launch():
             # optimize DDP, see https://zhuanlan.zhihu.com/p/671834539
             env["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
             env["TORCH_NCCL_AVOID_RECORD_STREAMS"] = "1"
+        """
+        print(env)
+        environ({
+            'SHELL': '/bin/bash',
+            'ROS_VERSION': '2',
+            'COLORTERM': 'truecolor',
+            'VSCODE_DEBUGPY_ADAPTER_ENDPOINTS': '/root/.vscode-server/extensions/ms-python.debugpy-2025.18.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-c426149082621ac5.txt',
+            'TERM_PROGRAM_VERSION': '1.107.1',
+            'CONDA_EXE': '/root/miniconda3/bin/conda',
+            'ROS_PYTHON_VERSION': '3',
+            'PYDEVD_DISABLE_FILE_VALIDATION': '1',
+            'OLLAMA_MODELS': '/home/zhanghao/edu/ollama/model',
+            'PWD': '/root/LLaMA-Factory',
+            'LOGNAME': 'root',
+            'XDG_SESSION_TYPE': 'tty',
+            'CONDA_PREFIX': '/root/miniconda3/envs/llamafactory',
+            'BUNDLED_DEBUGPY_PATH': '/root/.vscode-server/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/libs/debugpy',
+            'VSCODE_GIT_ASKPASS_NODE': '/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/node',
+            'MOTD_SHOWN': 'pam',
+            'HOME': '/root',
+            'LANG': 'C.UTF-8',
+            'LS_COLORS': 'rs=0:di=01;36:*.xspf=00;36:',
+            'PYTHONSTARTUP': '/root/.vscode-server/data/User/workspaceStorage/74d13de23a857e1c75719702a79872ec/ms-python.python/pythonrc.py',
+            'SSL_CERT_DIR': '/usr/lib/ssl/certs',
+            'CONDA_PROMPT_MODIFIER': '(llamafactory) ',
+            'AMENT_PREFIX_PATH': '/opt/ros/humble',
+            'GIT_ASKPASS': '/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/extensions/git/dist/askpass.sh',
+            'SSH_CONNECTION': '172.16.66.233 61476 192.168.100.59 22',
+            'VSCODE_GIT_ASKPASS_EXTRA_ARGS': '',
+            'LESSCLOSE': '/usr/bin/lesspipe %s %s',
+            'XDG_SESSION_CLASS': 'user',
+            'PYTHONPATH': '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages',
+            'TERM': 'xterm-256color',
+            'PYTHON_BASIC_REPL': '1',
+            'VSCODE_NONCE': '71107d5d-cea3-416a-b9e7-b37f99f5df49',
+            'LESSOPEN': '| /usr/bin/lesspipe %s',
+            'USER': 'root',
+            'VSCODE_GIT_IPC_HANDLE': '/run/user/0/vscode-git-79a36f4cb4.sock',
+            'CONDA_SHLVL': '2',
+            'SHLVL': '2',
+            'XDG_SESSION_ID': '61496',
+            'CONDA_PYTHON_EXE': '/root/miniconda3/bin/python',
+            'LD_LIBRARY_PATH': '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib',
+            'XDG_RUNTIME_DIR': '/run/user/0',
+            'SSL_CERT_FILE': '/usr/lib/ssl/certs/ca-certificates.crt',
+            'ROS_LOCALHOST_ONLY': '0',
+            'SSH_CLIENT': '172.16.66.233 61476 22',
+            'CONDA_DEFAULT_ENV': 'llamafactory',
+            'LC_TIME': 'C.UTF-8',
+            'VSCODE_GIT_ASKPASS_MAIN': '/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/extensions/git/dist/askpass-main.js',
+            'XDG_DATA_DIRS': '/usr/local/share:/usr/share:/var/lib/snapd/desktop',
+            'BROWSER': '/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/bin/helpers/browser.sh',
+            'PATH': '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/bin/remote-cli:/opt/ros/humble/bin:/root/miniconda3/envs/llamafactory/bin:/root/miniconda3/condabin:/sbin:/usr/sbin:/usr/local/sbin:/usr/lpp/mmfs/bin:/sbin:/usr/sbin:/usr/local/sbin:/usr/lpp/mmfs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/root/.vscode-server/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/scripts/noConfigScripts',
+            'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/0/bus',
+            'CONDA_PREFIX_1': '/root/miniconda3',
+            'ROS_DISTRO': 'humble',
+            'TERM_PROGRAM': 'vscode',
+            'VSCODE_IPC_HOOK_CLI': '/run/user/0/vscode-ipc-7e31eefd-1326-48ea-8006-de64728185b1.sock',
+            '_': '/usr/bin/env',
+            'OLDPWD': '/root/LLaMA-Factory',
+            'CUDA_VISIBLE_DEVICES': '1,2',
+            'PYTHONIOENCODING': 'UTF-8',
+            'PYTHONUNBUFFERED': '1',
+            'PYDEVD_USE_FRAME_EVAL': 'NO',
+            'DEBUGPY_RUNNING': 'true',
+            'PYTORCH_CUDA_ALLOC_CONF': 'expandable_segments:True',
+            'TORCH_NCCL_AVOID_RECORD_STREAMS': '1'
+        })
+        """
 
         # 8. 递归自启动 (Recursive Self-Invocation)
         # [为什么要这么写]: torchrun 后面接的是 __file__ (即当前脚本自身).
@@ -150,6 +261,22 @@ def launch():
             # 标准多卡模式
             # 注意: 不使用 shell=True 是为了防止 Shell 注入攻击, 且更利于信号传递(如 Ctrl+C 停止训练).
             # NOTE: DO NOT USE shell=True to avoid security risk
+            """print((
+                    "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
+                    "--master_addr {master_addr} --master_port {master_port} {file_name} {args}"
+                )
+                .format(
+                    nnodes=nnodes,
+                    node_rank=node_rank,
+                    nproc_per_node=nproc_per_node,
+                    master_addr=master_addr,
+                    master_port=master_port,
+                    file_name=__file__,
+                    args=" ".join(sys.argv[1:]),
+                )
+                .split())
+            ['torchrun', '--nnodes', '1', '--node_rank', '0', '--nproc_per_node', '2', '--master_addr', '127.0.0.1', '--master_port', '53559', '/root/LLaMA-Factory/src/llamafactory/launcher.py', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507']
+            """
             process = subprocess.run(
                 (
                     "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "

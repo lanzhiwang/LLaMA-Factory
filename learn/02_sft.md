@@ -28,8 +28,10 @@ model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507
 CUDA_VISIBLE_DEVICES=1 llamafactory-cli train examples/train_lora/qwen3_lora_sft.yaml \
 model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507
 
-CUDA_VISIBLE_DEVICES=1,2 llamafactory-cli train examples/train_lora/qwen3_lora_sft.yaml \
+CUDA_VISIBLE_DEVICES=1 python ./src/train.py examples/train_lora/qwen3_lora_sft.yaml \
 model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507
 
+CUDA_VISIBLE_DEVICES=1,2 llamafactory-cli train examples/train_lora/qwen3_lora_sft.yaml \
+model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507
 
 ```
