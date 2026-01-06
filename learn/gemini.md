@@ -1,12 +1,18 @@
+# [Gemini CLI](https://geminicli.com/)
 
 ```bash
-@lanzhiwang ➜ /workspaces/studio-release (main) $ cat .env
+# 安装
+$ npm install -g @google/gemini-cli
+
+$ cat .env
 GEMINI_API_KEY: AIzaSyBKpqc-AMWvzd_b9vaGZIqslr5j6XB5FLg
-@lanzhiwang ➜ /workspaces/studio-release (main) $
-@lanzhiwang ➜ /workspaces/studio-release (main) $ cat GEMINI.md
-假设你是一名精通 python 的高级开发，现在有如下 Python 文件，请分析该文件，为这个文件中的代码增加详细的注释，注意，注释只能添加到新的行中，不要在每一行代码的末尾添加注释，并请使用英文添加注释，如果已经有注释，请不要删除，继续添加注释即可，如果有中文注释，请不要删除和修改，直接添加即可
-@lanzhiwang ➜ /workspaces/studio-release (main) $
-@lanzhiwang ➜ /workspaces/studio-release (main) $ gemini
+
+$ cat GEMINI.md
+假设你是一名精通 LLM 相关的高级研究人员，并且也是一位 python 高级开发工程师，现在有一个专门用于 LLM 微调的项目 LLaMA-Factory。
+请读取指定目录中的代码，分析代码逻辑，为代码中的核心逻辑添加详细的注释。
+注意，您添加的注释要说明代码为什么要这么写，要解决的问题是什么。
+$
+$ gemini
 
  ███            █████████  ██████████ ██████   ██████ █████ ██████   █████ █████
 ░░░███         ███░░░░░███░░███░░░░░█░░██████ ██████ ░░███ ░░██████ ░░███ ░░███
