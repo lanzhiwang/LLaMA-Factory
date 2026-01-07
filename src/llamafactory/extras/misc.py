@@ -246,8 +246,47 @@ def numpify(inputs: Union["NDArray", "torch.Tensor"]) -> "NDArray":
 
 
 def skip_check_imports() -> None:
-    r"""Avoid flash attention import error in custom model files."""
+    r"""
+    Avoid flash attention import error in custom model files.
+
+    [为什么要这么写]:
+    这是一种"猴子补丁"(Monkey Patch), 通过将 transformers 内部用于检查导入的函数
+    `check_imports` 替换为只获取相对路径的 `get_relative_imports`.
+
+    [要解决的问题]:
+    1. 绕过远程代码(Remote Code)的依赖死锁:
+       当加载支持 `trust_remote_code=True` 的自定义模型(如 Qwen, DeepSeek, Mixtral 等)时,
+       transformers 会自动调用 `check_imports` 来检查模型代码文件(.py)中所有的 `import` 语句是否在本地环境存在.
+
+    2. 解决 Flash Attention 导致的加载失败:
+       很多现代模型在代码中硬编码了 `import flash_attn`. 如果用户的环境中没有安装 Flash Attention
+       (例如在 CPU 环境调试、CI/CD 容器中, 或者用户只想使用 SDPA), 原生 transformers 会直接抛出
+       ImportError 并终止模型加载, 即使该模型逻辑内部可能对 flash_attn 做了可选处理(try-except).
+
+    3. 提升离线/受限环境的鲁棒性:
+       在 LLaMA-Factory 这种微调框架中, 我们希望尽可能让模型先"加载进来", 具体的算子兼容性逻辑由框架
+       后续动态判断, 而不是被 Hugging Face 静态的导入检查卡死.
+
+    深度架构解析(高级研究员视角):
+
+    为什么 transformers 要设计 check_imports?
+    Hugging Face 的初衷是安全与确定性. 当从 Hub 下载模型脚本时, 它希望在运行任何代码前, 先确认当前环境满足该脚本的所有依赖, 避免运行到一半崩溃.
+
+    为什么 LLaMA-Factory 必须绕过它?
+    在工业级微调场景中, 硬件环境千差万别. 例如:
+    用户可能在多模态训练中只使用了文本组件, 但模型脚本里写了图像处理库的 import.
+    用户可能使用了 Unsloth 或 DeepSpeed 等第三方加速方案, 这些方案会动态替换掉模型内部的算子实现, 此时模型原始脚本里的那些 import 检查反而成了障碍.
+
+    工程风险点:
+    这种补丁属于"先斩后奏". 如果模型代码中真的存在一段必须运行但又缺少依赖的逻辑, 报错会被推迟到真正的 forward 阶段(Runtime Error).
+    但对于高级开发者来说, 这种灵活性是必须的, 因为我们有能力在更上层处理这些异常.
+    这种设计体现了 LLaMA-Factory "兼容性优先" 的工程哲学, 确保了框架在面对各种自定义程度极高的远程模型代码时, 依然能保持极高的起跑成功率.
+    """
+    # 增加一个开关逻辑, 允许高级用户通过环境变量强制恢复标准检查
     if not is_env_enabled("FORCE_CHECK_IMPORTS"):
+        # 将 check_imports 函数替换为 get_relative_imports.
+        # get_relative_imports 仅解析文件依赖关系, 而不会像原生的 check_imports 那样去验证第三方库是否存在.
+        # 这样即便模型文件中写了 `import some_missing_lib`, 模型也能成功加载到内存中.
         transformers.dynamic_module_utils.check_imports = get_relative_imports
 
 

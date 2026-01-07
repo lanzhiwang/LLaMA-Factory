@@ -52,6 +52,10 @@ def run_sft(
 ):
     # 1. 基础组件初始化
     tokenizer_module = load_tokenizer(model_args)
+    """
+    print(tokenizer_module)
+    {'tokenizer': Qwen2TokenizerFast(), 'processor': None}
+    """
     tokenizer = tokenizer_module["tokenizer"]
 
     # 模板适配与 Tokenizer 修正 (Template Alignment)
