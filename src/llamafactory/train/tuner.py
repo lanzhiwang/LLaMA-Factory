@@ -45,8 +45,46 @@ if is_ray_available():
     from ray.train.huggingface.transformers import RayTrainReportCallback
 
 
+"""
+在处理像 transformers 这样庞大的依赖库以及项目中复杂的模块互相引用时, 这是一种 Python 高级工程实践.
+# 1. 静态类型检查开关 (Static Type Analysis Guard)
+# [为什么要这么写]:
+# TYPE_CHECKING 是 typing 模块提供的一个特殊常量. 在程序实际运行时, 它的值永远是 False;
+# 只有在静态类型检查工具(如 Mypy、Pyright 或 IDE 的代码提示引擎)扫描代码时, 它的值才为 True.
+"""
 if TYPE_CHECKING:
+    # 2. 延迟导入类型定义 (Deferred Type Import)
+    # [解决的问题]:
+    # 问题 A: 循环依赖 (Circular Dependency)
+    # LLaMA-Factory 内部逻辑耦合度较高. 例如, Tuner 模块可能需要 Callback 的类型定义,
+    # 而 Callback 模块内部又反过来引用了 Tuner 里的配置类.
+    # 如果在文件顶部直接 import, 会导致 Python 解释器抛出"无法从未初始化模块导入"的错误.
+    # 使用这种写法, 在运行时不会触发真正的 import, 从而完美规避循环引用的死锁.
+
+    # 问题 B: 运行时性能与内存开销 (Runtime Performance)
+    # transformers 是一个非常沉重的库. 虽然在 LLM 项目中它最终会被加载, 但在模块初始化阶段,
+    # 我们不希望为了仅仅做一个类型声明(Type Hinting)就去触发昂贵的模块加载逻辑.
+    # 这能加快模块的初始加载速度, 减少不必要的命名空间污染.
+
+    # 问题 C: 保持代码整洁与 IDE 友好
+    # 这样写可以让开发人员在编写代码时, 享受到 IDE 提供的类成员自动补全和类型检查,
+    # 而在执行时却完全不产生任何额外开销.
     from transformers import TrainerCallback
+    # 注意: 原文中是 TrainerCallbacks, 通常在 transformers 中基类为 TrainerCallback
+"""
+高级研究员与资深开发者的视角:
+
+关于架构稳定性:
+在 LLaMA-Factory 中, 我们支持多种微调算法(SFT, DPO, PPO 等). 这些算法通常需要自定义 TrainerCallback 来监控 Loss 或进行特定的模型保存逻辑. 由于这些 Callback 往往需要引用全局的 FinetuningArguments, 通过 TYPE_CHECKING 引入类型, 可以确保我们在编写复杂的回调逻辑时, 类型系统能捕捉到可能的参数类型错误, 而不会在运行时增加模块间的耦合.
+
+工程化细节:
+作为高级工程师, 我们要区分 "类型空间 (Type Space)" 和 "值空间 (Value Space)".
+if TYPE_CHECKING: 块内的东西只存在于类型空间, 用于辅助开发.
+运行时的业务逻辑(值空间)不需要这些 import.
+如果在代码后续的非类型注释部分(例如在函数体内部)使用了 TrainerCallback, 我们需要确保它仅作为类型标注使用(如 def on_step(cb: "TrainerCallback"):), 或者在运行时动态导入.
+
+这种写法是区分 "初级脚本编写者" 与 "高级系统架构师" 的标志性细节之一.
+"""
 
 
 logger = logging.get_logger(__name__)

@@ -331,6 +331,10 @@ class MiniMaxM2ToolUtils(ToolUtils):
     @override
     @staticmethod
     def function_formatter(functions: list["FunctionCall"]) -> str:
+        """
+        print(functions)
+        [FunctionCall(name='get_weather', arguments='{"city": "上海", "unit": "celsius"}')]
+        """
         function_texts = []
         for func in functions:
             name, arguments = func.name, json.loads(func.arguments)
@@ -411,6 +415,32 @@ class QwenToolUtils(ToolUtils):
     @override
     @staticmethod
     def tool_formatter(tools: list[dict[str, Any]]) -> str:
+        """
+        print(tools)
+        [
+            {
+                'type': 'function',
+                'function': {
+                    'name': 'get_weather',
+                    'description': '获取指定城市的实时天气',
+                    'parameters': {
+                        'type': 'object',
+                        'properties': {
+                            'city': {
+                                'type': 'string',
+                                'description': '城市名称, 如: 北京'
+                            },
+                            'unit': {
+                                'type': 'string',
+                                'enum': ['celsius', 'fahrenheit']
+                            }
+                        },
+                        'required': ['city']
+                    }
+                }
+            }
+        ]
+        """
         tool_text = ""
         for tool in tools:
             wrapped_tool = tool if tool.get("type") == "function" else {"type": "function", "function": tool}
@@ -436,12 +466,20 @@ class QwenToolUtils(ToolUtils):
             return content
 
         results = []
+        """
+        print(tool_match)
+        ['\n{"name": "get_weather", "arguments": {"city": "上海"}}\n']
+        """
         for tool in tool_match:
             try:
                 tool = json.loads(tool.strip())
             except json.JSONDecodeError:
                 return content
 
+            """
+            print(tool)
+            {'name': 'get_weather', 'arguments': {'city': '上海'}}
+            """
             if "name" not in tool or "arguments" not in tool:
                 return content
 

@@ -3,12 +3,7 @@
 代码如下：
 
 ```python
-from transformers.dynamic_module_utils import get_relative_imports
 
-def skip_check_imports() -> None:
-    r"""Avoid flash attention import error in custom model files."""
-    if not is_env_enabled("FORCE_CHECK_IMPORTS"):
-        transformers.dynamic_module_utils.check_imports = get_relative_imports
 ```
 
 
