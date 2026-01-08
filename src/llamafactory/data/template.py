@@ -36,9 +36,17 @@ if TYPE_CHECKING:
 
 logger = logging.get_logger(__name__)
 
+"""
+在 LLM 微调中, Template 类是最核心的"翻译官".
+它负责将结构化的对话(JSON/List)翻译成模型能读懂的二进制 Token 流.
+由于不同模型(Llama-3, Qwen, Yi, DeepSeek)的特殊标记(Special Tokens)和拼接逻辑千差万别, 这段代码的设计目标是极致的抽象化与跨生态兼容性.
+"""
 
 @dataclass
 class Template:
+    # 各种格式化器 (Formatter)
+    # [设计动机]: 通过 Formatter 抽象层, 将 User/Assistant/System 等不同角色的拼接逻辑解耦.
+    # [解决的问题]: 只需更换 Formatter, 即可让同一套代码适配 Llama-3 (XML-like) 或 Qwen (Markdown-like) 格式.
     format_user: "Formatter"
     format_assistant: "Formatter"
     format_system: "Formatter"
@@ -47,13 +55,20 @@ class Template:
     format_tools: "Formatter"
     format_prefix: "Formatter"
     default_system: str
+    # 停止词, 用于生成时防止模型进入"复读机"模式
     stop_words: list[str]
+    # 针对 Reasoning 模型(如 DeepSeek-R1)的思考链标记
     thought_words: tuple[str, str]
+    # 工具调用标记
     tool_call_words: tuple[str, str]
+    # 是否在每个回复后强制添加 EOS, 影响模型收敛速度和停止行为
     efficient_eos: bool
+    # 针对某些 Tokenizer 缺陷, 是否需要手动替换 EOS Token
     replace_eos: bool
+    # 是否将当前模板同步给 Hugging Face 的 chat_template
     replace_jinja_template: bool
     enable_thinking: Optional[bool]
+    # 多模态插件(处理图片/视频)
     mm_plugin: "BasePlugin"
 
     def encode_oneturn(
@@ -63,9 +78,15 @@ class Template:
         system: Optional[str] = None,
         tools: Optional[str] = None,
     ) -> tuple[list[int], list[int]]:
-        r"""Return a single pair of token ids representing prompt and response respectively."""
+        r"""
+        Return a single pair of token ids representing prompt and response respectively.
+
+        将单轮对话编码为 Token IDs.
+        [解决的问题]: 返回 (prompt_ids, response_ids), 方便在 SFT 训练中对 prompt 部分进行 Label Masking(设为 -100).
+        """
         encoded_messages = self._encode(tokenizer, messages, system, tools)
         prompt_ids = []
+        # 将除了最后一条(回复)以外的所有内容拼接为 Prompt
         for encoded_ids in encoded_messages[:-1]:
             prompt_ids += encoded_ids
 
@@ -79,7 +100,14 @@ class Template:
         system: Optional[str] = None,
         tools: Optional[str] = None,
     ) -> list[tuple[list[int], list[int]]]:
-        r"""Return multiple pairs of token ids representing prompts and responses respectively."""
+        r"""
+        Return multiple pairs of token ids representing prompts and responses respectively.
+
+        将多轮对话编码为 Token 对列表.
+        [为什么要这么写]: 在多轮对话微调中, 每一轮的 User 输入相对于当前的 Assistant 回复都是 Prompt.
+        [解决的问题]: 支持训练模型在对话历史背景下生成当前回复的能力.
+        """
+
         encoded_messages = self._encode(tokenizer, messages, system, tools)
         return [(encoded_messages[i], encoded_messages[i + 1]) for i in range(0, len(encoded_messages), 2)]
 
@@ -109,7 +137,16 @@ class Template:
         return tokenizer.encode(self.add_thought(), add_special_tokens=False)
 
     def _convert_elements_to_ids(self, tokenizer: "PreTrainedTokenizer", elements: "SLOTS") -> list[int]:
-        r"""Convert elements to token ids."""
+        r"""
+        Convert elements to token ids.
+
+        核心 Token 转换函数: 将模板元素(Slot)转换为真实的 Token ID.
+        [解决的问题]:
+        1. 字符串: 直接 encode.
+        2. 字典: 处理带有特殊属性的 token(如 {"token": "<|im_end|>"}).
+        3. 集合: 处理动态的 bos_token/eos_token.
+        这确保了在不同模型中, 特殊控制符能被准确识别为单个 Token, 而不是被切碎.
+        """
         token_ids = []
         for elem in elements:
             if isinstance(elem, str):
@@ -138,6 +175,10 @@ class Template:
 
         Turn 0: prefix + system + query        resp
         Turn t: query                          resp.
+
+        对话拼接的总调度逻辑.
+        [为什么要这么写]: Turn 0 处理前缀和系统提示词, 后续轮次只处理 Query.
+        [解决的问题]: 实现了"状态机"式的拼接. 根据消息的角色(Role), 调用对应的 Formatter 进行 apply.
         """
         system = system or self.default_system
         encoded_messages = []
@@ -185,7 +226,15 @@ class Template:
             logger.warning_rank0("New tokens have been added, make sure `resize_vocab` is True.")
 
     def fix_special_tokens(self, tokenizer: "PreTrainedTokenizer") -> None:
-        r"""Add eos token and pad token to the tokenizer."""
+        r"""
+        Add eos token and pad token to the tokenizer.
+
+        Tokenizer 的自动修复机制.
+        [解决的问题]:
+        1. 许多模型(如 Llama-3 原版)在配置文件里漏掉了 PAD Token, 导致微调时无法 Batch 运算.
+        2. 某些模型需要手动指定特定的停止词作为 EOS.
+        该函数确保在训练开始前, Tokenizer 的 vocab 和特殊标记是完整且正确的, 避免出现"无法索引到词表"的错误.
+        """
         stop_words = self.stop_words
         if self.replace_eos:
             if not stop_words:
@@ -269,7 +318,13 @@ class Template:
         return jinja_template
 
     def fix_jinja_template(self, tokenizer: "PreTrainedTokenizer") -> None:
-        r"""Replace the jinja template in the tokenizer."""
+        r"""
+        Replace the jinja template in the tokenizer.
+
+        生态同步逻辑: 将 LLaMA-Factory 的内部模板转为 Hugging Face 标准.
+        [为什么要这么写]: LLaMA-Factory 有自己的模板系统, 但我们需要导出的模型能被 `apply_chat_template` 识别.
+        [解决的问题]: 实现"一次定义, 到处运行". 训练完导出的模型, 在任何支持 HF chat_template 的推理库中都能直接用.
+        """
         if tokenizer.chat_template is None or self.replace_jinja_template:
             try:
                 tokenizer.chat_template = self._get_jinja_template(tokenizer)
@@ -317,6 +372,10 @@ class Template:
         r"""Return the ollama modelfile.
 
         TODO: support function calling.
+
+        导出 Ollama 专用格式.
+        [为什么要这么写]: 随着端侧推理的流行, Ollama 拥有巨大的用户群.
+        [解决的问题]: 让 LLaMA-Factory 的训练产物能"秒变"为 Ollama 镜像, 通过一个 Modelfile 定义所有的特殊标记和模板.
         """
         modelfile = "# ollama modelfile auto-generated by llamafactory\n\n"
         modelfile += f'FROM .\n\nTEMPLATE """{self._get_ollama_template(tokenizer)}"""\n\n'
@@ -329,6 +388,23 @@ class Template:
 
         modelfile += "PARAMETER num_ctx 4096\n"
         return modelfile
+r"""
+高级研究员视角下的架构解析:
+
+为什么需要 _convert_elements_to_ids 这种复杂的转换?
+初级脚本通常直接 tokenizer.encode(prompt + response). 但这种做法在处理特殊 Token 时极度危险. 例如 <|im_start|> 可能被切成 <、|、im 等. 我们的设计通过 dict 标记特定的 token 字符串, 确保它们作为"原子"被转换, 保证了模板的 100% 还原度.
+
+fix_special_tokens 的重要性:
+在多卡分布式训练中, 如果 Tokenizer 的词表(Vocab)没有对齐, 会导致进程间通信死锁或 Loss 变为 NaN. 这个函数在加载模型后的第一时间进行"纠偏", 是保证大规模实验稳定性的关键.
+
+对 Reasoning (思维链) 的原生支持:
+thought_words 的引入说明框架已适配 DeepSeek-R1 时代的微调需求. 通过在 Template 中定义思考边界, 我们可以精准地控制哪些部分属于"心流(Thought)", 哪些部分属于"输出(Content)", 这对于构建具备思考能力的 Agent 至关重要.
+
+跨平台生态对齐:
+代码中同时支持了 Jinja2 (Hugging Face)、Modelfile (Ollama) 的导出. 这体现了 LLaMA-Factory 不仅仅是一个训练工具, 更是一个模型分发枢纽. 用户训练完成后, 可以无缝发布到各种推理后端, 无需手动重写复杂的 Prompt 模板.
+
+希望这些解析能帮你理解 LLaMA-Factory 的核心架构!
+"""
 
 
 @dataclass
