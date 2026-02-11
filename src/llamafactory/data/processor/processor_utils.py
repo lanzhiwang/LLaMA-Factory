@@ -121,7 +121,14 @@ def greedy_knapsack(numbers: list[int], capacity: int) -> list[list[int]]:
         list[list[int]]: 打包后的结果, 每个子列表代表一个"背包"里的样本长度组合.
     """
 
-    # 1. 排序: 这是二分查找的前提条件
+    """
+    1. 排序: 这是二分查找的前提条件
+    >>> sample_lengths = [100, 250, 150, 300, 50, 200, 400, 80]
+    >>> sample_lengths.sort()
+    >>> sample_lengths
+    [50, 80, 100, 150, 200, 250, 300, 400]
+    >>>
+    """
     numbers.sort()  # sort numbers in ascending order for binary search
     knapsacks = []
 
@@ -188,10 +195,10 @@ if __name__ == "__main__":
     sample_lengths = [100, 250, 150, 300, 50, 200, 400, 80]
     # 最大窗口长度
     cutoff_len = 512
+    print(f"原始样本数: {len(sample_lengths)}")
 
     packed_results = greedy_knapsack(sample_lengths, cutoff_len)
 
-    print(f"原始样本数: {len(sample_lengths)}")
     print(f"打包后的窗口数: {len(packed_results)}")
     for i, group in enumerate(packed_results):
         print(f"窗口 {i+1}: 包含长度 {group}, 总计: {sum(group)}")
@@ -219,4 +226,3 @@ if __name__ == "__main__":
     efficiency_gain = unpacked_tokens / total_compute_tokens
     print(f"效率提升: {efficiency_gain:.2f} 倍")
     # 输出: 效率提升: 2.00 倍
-
