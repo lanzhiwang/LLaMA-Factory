@@ -21,10 +21,18 @@ $ python
 Python 3.12.12 | packaged by Anaconda, Inc. | (main, Oct 21 2025, 20:16:04) [GCC 11.2.0] on linux
 Type "help", "copyright", "credits" or "license" for more information.
 >>> import torch
+>>> torch.__version__
+'2.10.0+cu128'
 >>> torch.cuda.is_available()
 True
 >>> torch.cuda.device_count()
 8
+>>> torch.cuda.get_device_name(0)
+'NVIDIA H20'
+>>> torch.cuda.get_device_name(1)
+'NVIDIA H20'
+>>> torch.cuda.get_device_name(7)
+'NVIDIA H20'
 >>>
 
 $ llamafactory-cli version
