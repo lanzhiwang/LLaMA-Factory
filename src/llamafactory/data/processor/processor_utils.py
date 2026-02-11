@@ -69,6 +69,24 @@ def search_for_fit(numbers: list[int], capacity: int) -> int:
     [为什么要这么写]: 利用 bisect 库实现 O(log N) 的搜索复杂度.
     [解决的问题]: 在高性能 Packing 算法中, 需要快速从候选长度列表中找到"最接近但不过载"的样本长度.
     相比于遍历搜索, 二分查找在处理数万个样本时能显著降低 CPU 预处理开销, 避免 GPU 在训练开始前处于闲置等待状态.
+
+    bisect.bisect(list, item) 用于在已排序列表 list 中查找 item 的插入位置.
+    如果列表中已存在 item, 则返回插入在所有已有 item 的右边.
+    用途: 寻找插入点, 使得序列在插入后保持有序.
+    返回值: 索引 i.
+
+    >>> import bisect
+    >>> data = [10, 20, 20, 20, 30, 40]  # 列表必须是有序的
+    >>> x = 20
+    >>> pos = bisect.bisect(data, x)
+    >>> pos
+    4
+    >>> bisect.bisect(data, 5)
+    0
+    >>> bisect.bisect(data, 50)
+    6
+    >>>
+
     """
     index = bisect.bisect(numbers, capacity)
     return -1 if index == 0 else (index - 1)
@@ -78,32 +96,55 @@ def greedy_knapsack(numbers: list[int], capacity: int) -> list[list[int]]:
     r"""
     Implement efficient greedy algorithm with binary search for the knapsack problem.
 
-    高效的贪心背包算法(Packing 算法).
-    [为什么要这么写]: 实现序列打包(Sequence Packing), 将多个短样本拼接成一个长度为 `cutoff_len` 的长样本.
-    [解决的问题]: LLM 训练极其昂贵. 如果 90% 的样本长度远小于 `cutoff_len`(例如 512 < 4096),
-    直接训练会导致显存内大量的 Padding 填充, 造成算力浪费.
-    该算法通过贪心策略和二分优化, 将短样本"塞"进最大长度限制内, 从而将训练吞吐量(Tokens per Second)提升数倍.
+    实现基于二分查找的高效贪心算法, 解决"装箱问题"(Bin Packing Problem).
+
+    [功能描述]:
+    该函数将一组样本长度(numbers)尽可能高效地塞进一个个容量固定为 capacity 的"背包"中.
+
+    [在 LLaMA-Factory 中的作用]:
+    在 SFT(有监督微调)或预训练中, 我们将多个训练样本(Prompt + Response)打包在一起.
+    例如: capacity(cutoff_len)是 4096, 我们有三个长度为 1000, 2000, 800 的样本.
+    如果不打包, 这三个样本会占用 3 个 4096 的窗口(大量 Padding);
+    如果打包, 它们可以挤进同一个 4096 的窗口中, 节省了近 3 倍的算力.
+
+    [算法逻辑]:
+    1. 首先对样本长度进行升序排列, 以便进行二分查找.
+    2. 开启一个新背包, 尝试从剩余样本中寻找能塞进去的"最大"样本.
+    3. 重复步骤 2, 直到没有任何样本能塞进当前背包, 然后开启下一个背包.
+    4. 贪心策略(优先塞入能放下的最大者)能有效减少背包的总数.
+
+    Args:
+        numbers (list[int]): 样本长度列表, 例如 [120, 500, 2000, ...]
+        capacity (int): 序列最大截断长度 (cutoff_len), 例如 4096
+
+    Returns:
+        list[list[int]]: 打包后的结果, 每个子列表代表一个"背包"里的样本长度组合.
     """
 
-    # 排序是为了配合二分查找, 提高搜索效率
+    # 1. 排序: 这是二分查找的前提条件
     numbers.sort()  # sort numbers in ascending order for binary search
     knapsacks = []
 
+    # 只要待选池里还有样本长度, 就继续打包
     while numbers:
-        current_knapsack = []
-        remaining_capacity = capacity
+        current_knapsack = []  # 当前背包(即一个训练窗口)
+        remaining_capacity = capacity  # 当前窗口剩余可容纳的 Token 数
 
         while True:
-            # 寻找当前剩余空间能容纳的最长样本
+            # 2. 二分搜索优化: 在 O(log N) 时间内找到剩余空间能装下的最大样本
+            # 这种做法比循环遍历快得多, 尤其是在数据集很大时
             index = search_for_fit(numbers, remaining_capacity)
             if index == -1:
-                # 没有任何样本能塞入当前这个"包"了
+                # 没有任何样本能塞入当前这个窗口了, 关闭当前窗口
                 break  # no more numbers fit in this knapsack
 
+            # 3. 记录并更新:
+            # 减去被占用的长度
             remaining_capacity -= numbers[index]  # update the remaining capacity
-            # 将选中的样本长度移出待选池
+            # 将该样本长度从待选池中弹出, 并加入当前背包
             current_knapsack.append(numbers.pop(index))  # add the number to knapsack
 
+        # 将装满(或无法再装)的背包存入结果
         knapsacks.append(current_knapsack)
 
     return knapsacks
@@ -140,17 +181,42 @@ def infer_seqlen(source_len: int, target_len: int, cutoff_len: int) -> tuple[int
     new_source_len = min(max_source_len, source_len)
     return new_source_len, new_target_len
 
-"""
-高级研究员视角下的架构深度解析:
 
-Packing 算法的必要性:
-在分布式训练中, 通讯开销(Communication Overhead)是巨大的. 如果你不使用 greedy_knapsack 进行序列打包, 你的 batch 中可能充斥着大量的 PAD token, 这不仅浪费了显存, 还降低了梯度更新的效率. LLaMA-Factory 引入这个算法是为了确保每一张卡处理的每一个 batch 几乎都是"满载"的.
+if __name__ == "__main__":
+    # 示例 A: 普通短样本打包
+    # 样本长度列表
+    sample_lengths = [100, 250, 150, 300, 50, 200, 400, 80]
+    # 最大窗口长度
+    cutoff_len = 512
 
-infer_seqlen 的启发式策略:
-在推理(Inference)中我们常说"Context is King", 但在微调训练中, "Label is King". 如果截断不当, 模型会学到不完整的句子甚至错误的逻辑. 这段代码中的 2 * < cutoff_len 阈值设定是一个经典的经验值, 旨在处理极端长文本输入时的健壮性.
+    packed_results = greedy_knapsack(sample_lengths, cutoff_len)
 
-高性能二分查找:
-bisect 是 Python 原生库. 之所以在这里使用它, 是因为在处理像 Pile 这种百万级规模的数据集时, 任何 O(N2) 的数据处理都会成为 CPU 瓶颈, 导致昂贵的 GPU 集群在空转. 这就是高级 Python 开发工程师对**性能瓶颈分析(Bottleneck Analysis)**的直觉体现.
+    print(f"原始样本数: {len(sample_lengths)}")
+    print(f"打包后的窗口数: {len(packed_results)}")
+    for i, group in enumerate(packed_results):
+        print(f"窗口 {i+1}: 包含长度 {group}, 总计: {sum(group)}")
 
-希望这些解析能让你对 LLaMA-Factory 的底层设计有更深刻的认识!
-"""
+    # 示例 B: 为什么它能节省算力？
+    # 对比"不打包"与"打包"的资源消耗:
+    lengths = [2000, 2100, 1500, 500, 400, 3000]
+    capacity = 4096
+
+    # 场景 1: 不打包 (Vanilla Training)
+    # 每个样本独立占用一个 4096 的窗口
+    unpacked_tokens = len(lengths) * capacity
+    # 结果是 24,576 Tokens 的计算量 (大部分是无用的 Padding)
+
+    # 场景 2: 使用 greedy_knapsack 打包
+    packed = greedy_knapsack(lengths.copy(), capacity)
+    packed_windows = len(packed)
+    total_compute_tokens = packed_windows * capacity
+    # 结果:
+    # 窗口 1: [3000, 500, 400] -> 3900
+    # 窗口 2: [2100, 1500] -> 3600
+    # 窗口 3: [2000] -> 2000
+    # 计算量只有 3 * 4096 = 12,288 Tokens
+
+    efficiency_gain = unpacked_tokens / total_compute_tokens
+    print(f"效率提升: {efficiency_gain:.2f} 倍")
+    # 输出: 效率提升: 2.00 倍
+
