@@ -196,12 +196,16 @@ if __name__ == "__main__":
     # 最大窗口长度
     cutoff_len = 512
     print(f"原始样本数: {len(sample_lengths)}")
+    # 原始样本数: 8
 
     packed_results = greedy_knapsack(sample_lengths, cutoff_len)
 
+    print(f"打包后的样本分布: {packed_results}")
     print(f"打包后的窗口数: {len(packed_results)}")
     for i, group in enumerate(packed_results):
         print(f"窗口 {i+1}: 包含长度 {group}, 总计: {sum(group)}")
+
+    print("---" * 10)
 
     # 示例 B: 为什么它能节省算力？
     # 对比"不打包"与"打包"的资源消耗:
@@ -216,12 +220,12 @@ if __name__ == "__main__":
     # 场景 2: 使用 greedy_knapsack 打包
     packed = greedy_knapsack(lengths.copy(), capacity)
     packed_windows = len(packed)
+    print(f"打包后的样本分布: {packed}")
+    print(f"打包后的窗口数: {packed_windows}")
+    for i, group in enumerate(packed):
+        print(f"窗口 {i+1}: 包含长度 {group}, 总计: {sum(group)}")
+
     total_compute_tokens = packed_windows * capacity
-    # 结果:
-    # 窗口 1: [3000, 500, 400] -> 3900
-    # 窗口 2: [2100, 1500] -> 3600
-    # 窗口 3: [2000] -> 2000
-    # 计算量只有 3 * 4096 = 12,288 Tokens
 
     efficiency_gain = unpacked_tokens / total_compute_tokens
     print(f"效率提升: {efficiency_gain:.2f} 倍")
