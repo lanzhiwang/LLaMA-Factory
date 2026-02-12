@@ -1,7 +1,7 @@
 import torch
 from typing import Optional, Any
 from collections import defaultdict
-from .feedback import FeedbackDatasetProcessor
+from llamafactory.data.processor import FeedbackDatasetProcessor
 
 # --- 模拟 LLaMA-Factory 内部组件 ---
 IGNORE_INDEX = -100
