@@ -16,27 +16,33 @@
 ```
 
 
-假设你是一位精通 python 和 llama-factory 的高级开发人员，现在有如下函数，
+假设你是一位精通 python 和 llama-factory 的高级开发人员，现在有如下代码，
 
 ```
-def infer_seqlen(source_len: int, target_len: int, cutoff_len: int) -> tuple[int, int]:
+@dataclass
+class DatasetProcessor(ABC):
     r"""
-    Compute the real sequence length after truncation by the cutoff_len.
+    A class for data processors.
     """
 
-    if target_len * 2 < cutoff_len:  # truncate source
-        max_target_len = cutoff_len
+    template: "Template"
+    tokenizer: "PreTrainedTokenizer"
+    processor: Optional["ProcessorMixin"]
+    data_args: "DataArguments"
 
-    elif source_len * 2 < cutoff_len:  # truncate target
-        max_target_len = cutoff_len - source_len
+    @abstractmethod
+    def preprocess_dataset(self, examples: dict[str, list[Any]]) -> dict[str, list[Any]]:
+        r"""
+        Build model inputs from the examples.
+        """
+        ...
 
-    else:  # truncate both
-        max_target_len = int(cutoff_len * (target_len / (source_len + target_len)))
-
-    new_target_len = min(max_target_len, target_len)
-    max_source_len = max(cutoff_len - new_target_len, 0)
-    new_source_len = min(max_source_len, source_len)
-    return new_source_len, new_target_len
+    @abstractmethod
+    def print_data_example(self, example: dict[str, list[int]]) -> None:
+        r"""
+        Print a data example to stdout.
+        """
+        ...
 ```
 
 请为该函数添加详细的注释，说明函数的功能，并写一些示例演示该函数的功能

@@ -30,16 +30,27 @@ class DatasetProcessor(ABC):
     r"""
     A class for data processors.
 
+    在 LLaMA-Factory 的架构中, DatasetProcessor 是数据生命周期的核心抽象层.
+    它处于"原始数据"与"模型张量"之间, 负责将各种格式的 JSON 数据(如 Alpaca 或 ShareGPT 格式)转化为模型能够直接训练的 input_ids 和 labels.
+
     数据处理器的抽象基类.
-    [为什么要这么写]: 采用典型的工厂/模板模式设计.
-    [解决的问题]: LLM 任务种类繁多(指令微调 SFT、预训练 PT、偏好对齐 DPO 等), 且涉及多模态.
-    通过定义抽象接口, 强制要求所有处理器实现预处理(preprocess_dataset)和调试输出(print_data_example),
-    保证了整个框架在处理不同数据集时具有统一的调用链, 极大降低了系统耦合度.
+
+    [为什么要这么写]:
+    采用了"模板方法"设计模式. LLM 微调涉及多种任务(SFT, DPO, Pretrain), 每种任务对 Token 拼接、Loss Masking 的逻辑都不同.
+    通过定义这个抽象基类, 框架可以统一调用流程, 而具体的拼接逻辑交给子类实现.
+
+    [解决的问题]:
+    1. 统一接口: 无论是文本微调还是多模态训练, Trainer 只需调用 preprocess_dataset 即可.
+    2. 依赖注入: 将 Tokenizer、Chat Template 和数据配置(cutoff_len 等)封装在一起, 减少函数参数传递的复杂性.
     """
 
+    # 注入对话模板(如 Llama-3, Qwen), 负责添加角色标记(如 <|im_start|>)
     template: "Template"
+    # 注入分词器, 负责将拼接好的字符串转为 ID 序列
     tokenizer: "PreTrainedTokenizer"
+    # 可选的多模态处理器(如处理图像/音频的处理器)
     processor: Optional["ProcessorMixin"]
+    # 注入数据参数配置(如截断长度 cutoff_len, 是否打包 packing 等)
     data_args: "DataArguments"
 
     @abstractmethod
@@ -47,7 +58,14 @@ class DatasetProcessor(ABC):
         r"""
         Build model inputs from the examples.
 
-        将原始数据转化为模型可接受的 input_ids, labels 等输入.
+        核心方法: 将原始数据示例批量转换为模型输入.
+
+        [功能]:
+        接收 HuggingFace `datasets` 库生成的 Batch(字典格式, 值为列表),
+        执行拼接、分词、截断、Labels 生成等操作, 返回包含 input_ids, labels 等字段的字典.
+
+        [为什么重要]:
+        这里是实现 SFT 中"只对回答计算 Loss(Masking Prompt)"逻辑的地方.
         """
         ...
 
@@ -56,7 +74,12 @@ class DatasetProcessor(ABC):
         r"""
         Print a data example to stdout.
 
-        将处理后的数据打印到终端, 用于开发者排查 Tokenizer 转换和 Template 拼接是否正确.
+        调试方法: 将处理后的一个样本打印到控制台.
+
+        [解决的问题]:
+        Tokenize 过程是一个"黑盒". 通过这个方法, 开发者可以直观地看到:
+        1. Chat Template 拼接是否正确(是否有空格丢失、角色标记是否放对).
+        2. Labels 是否正确遮蔽了 Prompt(IGNORE_INDEX 是否在正确位置).
         """
         ...
 
@@ -283,3 +306,94 @@ if __name__ == "__main__":
     # 场景 5: 复杂比例场景
     test_truncation(1500, 500) # 3:1 的比例
     # 分配结果会接近 Source=384, Target=128
+
+    print("---" * 20)
+    class SimpleSFTProcessor(DatasetProcessor):
+        def preprocess_dataset(self, examples):
+            # 简化版: 假设输入是 {"instruction": [...], "output": [...]}
+            model_inputs = {"input_ids": [], "labels": []}
+
+            for i in range(len(examples["instruction"])):
+                prompt = examples["instruction"][i]
+                answer = examples["output"][i]
+
+                # 使用 template 拼接字符串 (模拟行为)
+                full_text = f"User: {prompt}\nAssistant: {answer}"
+
+                # 分词
+                ids = self.tokenizer.encode(full_text, add_special_tokens=True)
+
+                # 简单的 Label 生成: 假设我们要对全文本计算 Loss
+                labels = ids.copy()
+
+                model_inputs["input_ids"].append(ids)
+                model_inputs["labels"].append(labels)
+
+            return model_inputs
+
+        def print_data_example(self, example):
+            # 解码并展示
+            decoded_text = self.tokenizer.decode(example["input_ids"])
+            print(f"--- 训练样本预览 ---\n{decoded_text}\n------------------")
+
+    # 1. 模拟环境
+    from transformers import AutoTokenizer
+
+    # 假设我们使用 Qwen 的分词器
+    tokenizer = AutoTokenizer.from_pretrained("./models/Qwen/Qwen3-4B-Instruct-2507/")
+
+    # 2. 模拟数据
+    raw_data = {
+        "instruction": ["你是谁？", "今天天气怎么样？"],
+        "output": ["我是智谱AI开发的大模型。", "今天天气晴朗。"]
+    }
+
+    # 3. 初始化处理器 (此处省略 template 和 data_args 的具体复杂实例化)
+    processor = SimpleSFTProcessor(
+        template=None, # 实际中会有 Template 对象
+        tokenizer=tokenizer,
+        processor=None,
+        data_args=None
+    )
+
+    # 4. 执行预处理
+    processed_batch = processor.preprocess_dataset(raw_data)
+
+    # 5. 查看第一个样本结果
+    processor.print_data_example({"input_ids": processed_batch["input_ids"][0]})
+
+
+"""
+$ python src/llamafactory/data/processor/processor_utils.py
+原始样本数: 8
+打包后的样本分布: [[400, 100], [300, 200], [250, 150, 80], [50]]
+打包后的窗口数: 4
+窗口 1: 包含长度 [400, 100], 总计: 500
+窗口 2: 包含长度 [300, 200], 总计: 500
+窗口 3: 包含长度 [250, 150, 80], 总计: 480
+窗口 4: 包含长度 [50], 总计: 50
+------------------------------
+打包后的样本分布: [[3000, 500, 400], [2100, 1500], [2000]]
+打包后的窗口数: 3
+窗口 1: 包含长度 [3000, 500, 400], 总计: 3900
+窗口 2: 包含长度 [2100, 1500], 总计: 3600
+窗口 3: 包含长度 [2000], 总计: 2000
+效率提升: 2.00 倍
+------------------------------------------------------------
+原始: Source=100  Target=200  | 总和=300
+分配: Source=100  Target=200  | 总和=300
+**********
+原始: Source=1000 Target=100  | 总和=1100
+分配: Source=412  Target=100  | 总和=512
+**********
+原始: Source=50   Target=1000 | 总和=1050
+分配: Source=50   Target=462  | 总和=512
+**********
+原始: Source=1000 Target=1000 | 总和=2000
+分配: Source=256  Target=256  | 总和=512
+**********
+原始: Source=1500 Target=500  | 总和=2000
+分配: Source=384  Target=128  | 总和=512
+**********
+$
+"""
