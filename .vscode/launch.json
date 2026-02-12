@@ -27,7 +27,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "python": "/root/miniconda3/envs/llamafactory/bin/python",
+            "python": "/root/anaconda3/envs/llamafactory/bin/python",
             "steppingResumesAllThreads": false,
         },
     ]
