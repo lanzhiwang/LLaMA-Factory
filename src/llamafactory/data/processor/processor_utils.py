@@ -161,31 +161,52 @@ def infer_seqlen(source_len: int, target_len: int, cutoff_len: int) -> tuple[int
     r"""
     Compute the real sequence length after truncation by the cutoff_len.
 
-    根据最大长度限制(cutoff_len)智能推导 Source 和 Target 的实际保留长度.
-    [为什么要这么写]: 实现比例自适应的截断策略.
-    [解决的问题]: 传统的"简单截断"往往直接从序列末尾砍掉, 导致最重要的 Answer(Target)部分全失.
-    这里的逻辑解决了三大痛点:
-    1. 保护 Target: 如果 Target 很短, 优先截断过长的 Source(Question).
-    2. 保护 Source: 如果 Source 很短, 优先截断过长的 Target(Answer).
-    3. 比例协调: 如果两者都非常长, 则根据它们的长度比例分配截断额度, 确保上下文和答案都能保留关键部分.
-    这是保证大模型微调数据质量(Data Quality)的工业级细节处理.
+    在 LLM 微调过程中, 数据的截断策略直接影响模型的训练质量.
+    如果简单地使用 tokens[:cutoff_len] 进行截断, 往往会把序列末尾的 Target(预测答案) 全部砍掉, 导致模型学不到任何有意义的内容.
+    infer_seqlen 的核心目标是: 在总长度超过限制时, 以一种"智能且平衡"的方式分配 Prompt(源)和 Response(目标)的长度, 尽可能保护最重要的信息.
+
+    根据最大长度限制 (cutoff_len) 智能推导 Source 和 Target 的实际保留长度.
+
+    [为什么要这么写]:
+    在 SFT(有监督微调)中, Source 是问题, Target 是答案. 如果总长超标, 我们不能暴力截断.
+    本函数通过启发式策略, 动态平衡两者的权重, 避免其中一方被完全截断.
+
+    [解决的问题]:
+    1. 保护 Label: 如果答案(Target)被截断, 模型会学到破碎的语义.
+    2. 保护 Context: 如果问题(Source)被截断过重, 模型会因为丢失关键上下文而无法理解指令.
+    3. 比例协调: 在两者都极长时, 按比例缩小, 维持原始数据的分布感.
     """
 
-    # 情况1: Target 特别短, 全力保留 Target, 截断 Source
+    # 情况 1: Target(答案)相对较短(不足最大长度的一半)
+    # [策略]: 优先保障 Target 的完整性.
+    # 只要总长度够, 就让 Target 占满它需要的空间, 剩余空间全部留给 Source.
     if target_len * 2 < cutoff_len:  # truncate source
         max_target_len = cutoff_len
 
-    # 情况2: Source 特别短, 全力保留 Source, 截断 Target
+    # 情况 2: Source(问题)相对较短(不足最大长度的一半)
+    # [策略]: 优先保障 Source 的完整性.
+    # 如果问题本身很短, 我们没必要截断问题, 剩下的空间全部给 Target 自由发挥.
     elif source_len * 2 < cutoff_len:  # truncate target
         max_target_len = cutoff_len - source_len
 
-    # 情况3: 两者都长, 按比例动态分配, 避免其中一方被完全截掉
+    # 情况 3: Source 和 Target 都非常长
+    # [策略]: 按比例截断(Proportional Truncation).
+    # [解决的问题]: 避免某一方"吃掉"另一方. 例如在长对话中, 如果两者都长,
+    # 我们根据它们原始长度的比例, 公平地分配 cutoff_len 的额度.
     else:  # truncate both
         max_target_len = int(cutoff_len * (target_len / (source_len + target_len)))
 
+    # --- 最终修正环节 ---
+
+    # 1. 确定最终 Target 长度: 不能超过它原始的长度, 也不能超过上面分配的 quota
     new_target_len = min(max_target_len, target_len)
+
+    # 2. 计算剩余给 Source 的空间: 总长度减去已经分给 Target 的长度, 确保不小于 0
     max_source_len = max(cutoff_len - new_target_len, 0)
+
+    # 3. 确定最终 Source 长度: 同理, 不能超过原始长度, 也不能超过剩余空间
     new_source_len = min(max_source_len, source_len)
+
     return new_source_len, new_target_len
 
 
@@ -230,3 +251,35 @@ if __name__ == "__main__":
     efficiency_gain = unpacked_tokens / total_compute_tokens
     print(f"效率提升: {efficiency_gain:.2f} 倍")
     # 输出: 效率提升: 2.00 倍
+
+    print("---" * 20)
+
+    # 假设我们的最大长度限制 (cutoff_len) 为 512
+    def test_truncation(s_len, t_len, cutoff=512):
+        new_s, new_t = infer_seqlen(s_len, t_len, cutoff)
+        print(f"原始: Source={s_len:<4} Target={t_len:<4} | 总和={s_len+t_len}")
+        print(f"分配: Source={new_s:<4} Target={new_t:<4} | 总和={new_s+new_t}")
+        print("*" * 10)
+
+    # 场景 1: 总长度小于 cutoff_len (不进行任何截断)
+    test_truncation(100, 200)
+    # 输出: 保持 100, 200
+
+    # 场景 2: Source 极长, Target 较短 (保护 Target, 截断 Source)
+    # 例如: 长文章总结任务
+    test_truncation(1000, 100)
+    # 输出: Target 100 完整保留, Source 被截断为 412 (512-100)
+
+    # 场景 3: Source 较短, Target 极长 (保护 Source, 截断 Target)
+    # 例如: 根据短提示写长小说
+    test_truncation(50, 1000)
+    # 输出: Source 50 完整保留, Target 被截断为 462 (512-50)
+
+    # 场景 4: 两者都非常长 (按比例分配)
+    # 例如: 两个长文档的对比或改写
+    test_truncation(1000, 1000)
+    # 输出: 两者长度相同且都超标, 各分配一半空间 (256, 256)
+
+    # 场景 5: 复杂比例场景
+    test_truncation(1500, 500) # 3:1 的比例
+    # 分配结果会接近 Source=384, Target=128
