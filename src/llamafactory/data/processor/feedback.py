@@ -28,6 +28,10 @@ logger = logging.get_logger(__name__)
 
 
 class FeedbackDatasetProcessor(DatasetProcessor):
+    """
+    这个类是 KTO (Kahneman-Tversky Optimization) 算法的核心数据处理模块。KTO 是一种人类偏好对齐算法，与 DPO（对比“好”与“坏”的一对数据）不同，KTO 只需要单条数据并标注“满意”或“不满意”。
+    """
+
     def _encode_data_example(
         self,
         prompt: list[dict[str, str]],
