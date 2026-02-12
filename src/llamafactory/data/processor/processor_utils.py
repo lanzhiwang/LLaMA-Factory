@@ -395,5 +395,10 @@ $ python src/llamafactory/data/processor/processor_utils.py
 原始: Source=1500 Target=500  | 总和=2000
 分配: Source=384  Target=128  | 总和=512
 **********
+------------------------------------------------------------
+--- 训练样本预览 ---
+User: 你是谁？
+Assistant: 我是智谱AI开发的大模型。
+------------------
 $
 """
