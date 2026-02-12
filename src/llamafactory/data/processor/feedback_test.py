@@ -67,10 +67,14 @@ examples = {
 # --- 初始化并调用 ---
 
 # 假设的基础类属性注入
-processor = FeedbackDatasetProcessor()
-processor.template = MockTemplate()
-processor.tokenizer = MockTokenizer()
-processor.data_args = type("Args", (), {"cutoff_len": 128})()
+processor = FeedbackDatasetProcessor(
+    template=MockTemplate(),
+    tokenizer=MockTokenizer(),
+    processor=None,
+    data_args=type("Args", (), {"cutoff_len": 128})()
+)
+
+
 
 # 执行预处理
 output = processor.preprocess_dataset(examples)
