@@ -24,7 +24,9 @@ from .tool_utils import FunctionCall, get_tool_utils
 
 """
 这段代码是 LLaMA-Factory 对话模板(Chat Template)系统的灵魂.
-LLM 微调中最痛苦的逻辑之一就是: 不同模型(如 Llama-3, Qwen, DeepSeek, GLM)对"角色标记"、"工具调用(Function Calling)"和"思考过程(Thinking)"的字符串格式要求完全不同.
+LLM 微调中最痛苦的逻辑之一就是:
+不同模型(如 Llama-3, Qwen, DeepSeek, GLM)对"角色标记"、"工具调用(Function Calling)"和"思考过程(Thinking)"的字符串格式要求完全不同.
+
 为了实现"一套代码微调所有模型", 我们设计了这套 Formatter 抽象层.
 它解决的核心问题是: 将结构化的对话数据, 精准且无损地转换为不同模型特定的 Token 序列, 并支持复杂的工具调用逻辑.
 """
@@ -71,6 +73,13 @@ class EmptyFormatter(Formatter):
         # 实例化 EmptyFormatter 对象之后开始执行 __post_init__ 方法
         # 严格性检查: 确保 EmptyFormatter 不包含 {{name}} 占位符
         has_placeholder = False
+
+        """
+        print(filter(lambda s: isinstance(s, str), self.slots))
+        <filter object at 0x7fb8bc9fe5c0>
+        print(list(filter(lambda s: isinstance(s, str), self.slots)))
+        ['user']
+        """
         for slot in filter(lambda s: isinstance(s, str), self.slots):
             if re.search(r"\{\{[a-zA-Z_][a-zA-Z0-9_]*\}\}", slot):
                 has_placeholder = True
@@ -93,6 +102,13 @@ class StringFormatter(Formatter):
     def __post_init__(self):
         # 校验: StringFormatter 必须包含至少一个占位符, 否则应该用 EmptyFormatter
         has_placeholder = False
+
+        """
+        print(filter(lambda s: isinstance(s, str), self.slots))
+        <filter object at 0x7f96c709ffd0>
+        print(list(filter(lambda s: isinstance(s, str), self.slots)))
+        ['user', '\n\n', '{{content}}']
+        """
         for slot in filter(lambda s: isinstance(s, str), self.slots):
             if re.search(r"\{\{[a-zA-Z_][a-zA-Z0-9_]*\}\}", slot):
                 has_placeholder = True
@@ -104,9 +120,24 @@ class StringFormatter(Formatter):
     def apply(self, **kwargs) -> SLOTS:
         """
         print(kwargs)
-        {'content': '今天天气怎么样？'}
+        {'content': '请问如何学习 Python?'}
         """
+
         elements = []
+        """
+        print(elements)
+        [{'token': '<|start_header_id|>'}]
+        print(elements)
+        [{'token': '<|start_header_id|>'}, 'user']
+        print(elements)
+        [{'token': '<|start_header_id|>'}, 'user', {'token': '<|end_header_id|>'}]
+        print(elements)
+        [{'token': '<|start_header_id|>'}, 'user', {'token': '<|end_header_id|>'}, '\n\n']
+        print(elements)
+        [{'token': '<|start_header_id|>'}, 'user', {'token': '<|end_header_id|>'}, '\n\n', '请问如何学习 Python?']
+        print(elements)
+        [{'token': '<|start_header_id|>'}, 'user', {'token': '<|end_header_id|>'}, '\n\n', '请问如何学习 Python?', {'token': '<|eot_id|>'}]
+        """
         for slot in self.slots:
             if isinstance(slot, str):
                 for name, value in kwargs.items():
@@ -141,21 +172,56 @@ class FunctionFormatter(StringFormatter):
 
     @override
     def apply(self, **kwargs) -> SLOTS:
+        """
+        print(kwargs)
+        {
+            'content': '\n<thought>\n用户想知道北京的天气. 我应该调用 get_weather 工具, 参数是 city=\'Beijing\'.\n</thought>\n{\n    "name": "get_weather",\n    "arguments": {"city": "Beijing", "unit": "celsius"}\n}\n',
+            'thought_words': ['<thought>', '</thought>']
+        }
+        """
         content: str = kwargs.pop("content")
         # 思考标记, 如 ["<thought>", "</thought>"]
         thought_words = kwargs.pop("thought_words", None)
         # 工具调用标记
         tool_call_words = kwargs.pop("tool_call_words", None)
+        """
+        print(content)
+
+        <thought>
+        用户想知道北京的天气. 我应该调用 get_weather 工具, 参数是 city='Beijing'.
+        </thought>
+        {
+            "name": "get_weather",
+            "arguments": {"city": "Beijing", "unit": "celsius"}
+        }
+
+        print(thought_words)
+        ['<thought>', '</thought>']
+        print(tool_call_words)
+        None
+        print(kwargs)
+        {}
+        """
 
         def _parse_functions(json_content: str) -> list["FunctionCall"]:
             """
             将模型生成的 JSON 字符串解析为结构化的 FunctionCall 对象
+
+            print(json_content)
+            {
+                "name": "get_weather",
+                "arguments": {"city": "Beijing", "unit": "celsius"}
+            }
             """
             try:
                 tool_calls = json.loads(json_content)
                 # 兼容非并行调用格式
                 if not isinstance(tool_calls, list):  # parallel function call
                     tool_calls = [tool_calls]
+                """
+                print(tool_calls)
+                [{'name': 'get_weather', 'arguments': {'city': 'Beijing', 'unit': 'celsius'}}]
+                """
 
                 return [FunctionCall(tc["name"], json.dumps(tc["arguments"], ensure_ascii=False)) for tc in tool_calls]
             except json.JSONDecodeError:
@@ -182,8 +248,18 @@ class FunctionFormatter(StringFormatter):
                 json_part = content.replace(thought_match.group(0), "")
             else:
                 json_part = content
-
+            """
+            print(json_part)
+            {
+                "name": "get_weather",
+                "arguments": {"city": "Beijing", "unit": "celsius"}
+            }
+            """
             functions = _parse_functions(json_part)
+            """
+            print(functions)
+            [FunctionCall(name='get_weather', arguments='{"city": "Beijing", "unit": "celsius"}')]
+            """
             # 使用工具处理器将 FunctionCall 对象转化为目标模板格式的字符串
             function_str = self.tool_utils.function_formatter(functions)
             if thought_match:
