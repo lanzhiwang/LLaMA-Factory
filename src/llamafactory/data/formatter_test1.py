@@ -9,8 +9,8 @@ class FunctionCall:
 # 演示代码
 def demo_empty_formatter():
     print("=== 示例 1: 正常的静态标识符处理 ===")
-    # 假设这是某个模型 User 角色的固定前缀，不含动态内容
-    # {"token": "..."} 在 LLaMA-Factory 中代表这是一个特殊 Token，不应该被分词器二次切分
+    # 假设这是某个模型 User 角色的固定前缀, 不含动态内容
+    # {"token": "..."} 在 LLaMA-Factory 中代表这是一个特殊 Token, 不应该被分词器二次切分
     user_header = EmptyFormatter(
         slots=[
             {"token": "<|start_header_id|>"},
@@ -26,7 +26,7 @@ def demo_empty_formatter():
 
     print("\n=== 示例 2: 触发逻辑校验错误 ===")
     try:
-        # 错误演示：如果把动态槽位误传给 EmptyFormatter
+        # 错误演示: 如果把动态槽位误传给 EmptyFormatter
         invalid_formatter = EmptyFormatter(slots=["User: {{content}}"])
     except ValueError as e:
         print(f"校验成功截获错误: {e}")

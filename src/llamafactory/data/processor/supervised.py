@@ -40,6 +40,22 @@ class SupervisedDatasetProcessor(DatasetProcessor):
         videos: list["VideoInput"],
         audios: list["AudioInput"],
     ) -> tuple[list[int], list[int]]:
+        """
+        print(prompt)
+        [{'role': 'user', 'content': '你好'}, {'role': 'assistant', 'content': '我是助手'}, {'role': 'user', 'content': '循环怎么写'}]
+        print(response)
+        [{'role': 'assistant', 'content': '用for循环'}]
+        print(system)
+        助手
+        print(tools)
+        None
+        print(images)
+        []
+        print(videos)
+        []
+        print(audios)
+        []
+        """
         messages = self.template.mm_plugin.process_messages(prompt + response, images, videos, audios, self.processor)
         input_ids, labels = self.template.mm_plugin.process_token_ids(
             [], [], images, videos, audios, self.tokenizer, self.processor
@@ -86,6 +102,29 @@ class SupervisedDatasetProcessor(DatasetProcessor):
         return input_ids, labels
 
     def preprocess_dataset(self, examples: dict[str, list[Any]]) -> dict[str, list[Any]]:
+        """
+        print(examples)
+        {
+            "_prompt": [
+                [
+                    {"role": "user", "content": "你好"},
+                    {"role": "assistant", "content": "我是助手"},
+                    {"role": "user", "content": "循环怎么写"},
+                ],
+                [{"role": "user", "content": "介绍北京"}],
+            ],
+            "_response": [
+                [{"role": "assistant", "content": "用for循环"}],
+                [{"role": "assistant", "content": "北京是首都"}],
+            ],
+            "_system": ["助手", "导游"],
+            "_tools": [None, None],
+            "_images": [None, None],
+            "_videos": [None, None],
+            "_audios": [None, None],
+        }
+        """
+
         # build inputs with format `<bos> X Y <eos>` and labels with format `<ignore> ... <ignore> Y <eos>`
         # for multiturn examples, we only mask the prompt part in each prompt-response pair.
         model_inputs = defaultdict(list)
@@ -112,6 +151,30 @@ class SupervisedDatasetProcessor(DatasetProcessor):
             model_inputs["videos"].append(examples["_videos"][i])
             model_inputs["audios"].append(examples["_audios"][i])
 
+        """
+        print(model_inputs)
+        defaultdict(
+            <class 'list'>,
+            {
+                'input_ids': [
+                    [20, 9, 5, 59, 61, 63, 90, 15, 90, 40, 89, 92, 2, 11, 14, 90, 15, 2],
+                    [71, 61, 71, 40, 71, 40, 59, 18, 17, 2]
+                ],
+                'attention_mask': [
+                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+                ],
+                'labels': [
+                    [-100, -100, 5, 59, 61, 63, 2, -100, -100, -100, -100, 92, 2, 11, 14, 90, 15, 2],
+                    [-100, -100, -100, -100, 71, 40, 59, 18, 17, 2]
+                ],
+                'images': [None, None],
+                'videos': [None, None],
+                'audios': [None, None]
+            }
+        )
+        """
+
         return model_inputs
 
     def print_data_example(self, example: dict[str, list[int]]) -> None:
@@ -125,6 +188,26 @@ class SupervisedDatasetProcessor(DatasetProcessor):
 @dataclass
 class PackedSupervisedDatasetProcessor(SupervisedDatasetProcessor):
     def preprocess_dataset(self, examples: dict[str, list[Any]]) -> dict[str, list[Any]]:
+        """
+        print(examples)
+        {
+            "_prompt": [
+                [{"role": "user", "content": "Hi"}],  # 样本 1
+                [{"role": "user", "content": "Hello"}],  # 样本 2
+                [{"role": "user", "content": "Hey"}],  # 样本 3
+            ],
+            "_response": [
+                [{"role": "assistant", "content": "A"}],  # 样本 1 回答
+                [{"role": "assistant", "content": "B"}],  # 样本 2 回答
+                [{"role": "assistant", "content": "C"}],  # 样本 3 回答
+            ],
+            "_system": [None] * 3,
+            "_tools": [None] * 3,
+            "_images": [None] * 3,
+            "_videos": [None] * 3,
+            "_audios": [None] * 3,
+        }
+        """
         # TODO: use `position_ids` to achieve packing
         # build inputs with format `<bos> X1 Y1 <eos> <bos> X2 Y2 <eos>`
         # and labels with format `<ignore> ... <ignore> Y1 <eos> <ignore> ... <ignore> Y2 <eos>`
