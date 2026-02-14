@@ -28,6 +28,15 @@ logger = logging.get_logger(__name__)
 
 
 class PairwiseDatasetProcessor(DatasetProcessor):
+    """
+    PairwiseDatasetProcessor 类是偏好对齐(Preference Alignment) 阶段(如 DPO、RM、ORPO)的数据处理核心.
+    它的核心使命是: 将"一问两答"的原始数据, 转化为模型可以同时对比的成对 Token 张量.
+
+    成对数据处理器.
+    解决的问题: 在 RLHF 或 DPO 中, 我们需要模型学习"为什么回答 A 比回答 B 好".
+    该类负责将 (Prompt, Chosen_Response, Rejected_Response) 转化为训练所需的格式.
+    """
+
     def _encode_data_example(
         self,
         prompt: list[dict[str, str]],
@@ -39,6 +48,11 @@ class PairwiseDatasetProcessor(DatasetProcessor):
         audios: list["AudioInput"],
     ) -> tuple[list[int], list[int], list[int], list[int]]:
         """
+        单条数据编码逻辑.
+        为什么要单独写这个函数:
+        1. 保证 Prompt 部分在 Chosen 和 Rejected 两条序列中完全一致(这对对比学习至关重要).
+        2. 统一处理多模态信息插入位置.
+
         print(prompt)
         [{'role': 'user', 'content': '法国的首都是哪里?'}]
         print(response)
@@ -54,6 +68,8 @@ class PairwiseDatasetProcessor(DatasetProcessor):
         print(audios)
         []
         """
+        # 1. 构造两条完整的对话流: Prompt + Chosen 和 Prompt + Rejected
+        # 解决的问题: 多模态内容(如图片占位符)需要根据 Prompt 长度和位置进行预处理.
         chosen_messages = self.template.mm_plugin.process_messages(
             prompt + [response[0]], images, videos, audios, self.processor
         )
@@ -70,6 +86,9 @@ class PairwiseDatasetProcessor(DatasetProcessor):
         [{'role': 'user', 'content': '法国的首都是哪里?'}, {'role': 'assistant', 'content': '伦敦.'}]
         """
 
+        # 2. 调用模板进行 Tokenize 编码
+        # 为什么要分别取 prompt_ids 和 chosen_ids:
+        # 在 DPO 或 RM 中, 我们需要精确知道 Prompt 的结束位置, 以便在计算 Loss 时屏蔽掉 Prompt 部分.
         prompt_ids, chosen_ids = self.template.encode_oneturn(self.tokenizer, chosen_messages, system, tools)
         """
         print(prompt_ids)
@@ -83,6 +102,8 @@ class PairwiseDatasetProcessor(DatasetProcessor):
         [301, 302]
         """
 
+        # 3. 结束符(EOS)处理
+        # 解决的问题: 确保模型学会在回答结束时停止. 如果开启了 efficient_eos, 手动在每个回复末尾添加结束符.
         if self.template.efficient_eos:
             chosen_ids += [self.tokenizer.eos_token_id]
             rejected_ids += [self.tokenizer.eos_token_id]
@@ -93,6 +114,8 @@ class PairwiseDatasetProcessor(DatasetProcessor):
         [301, 302, 99]
         """
 
+        # 4. 多模态 Token 占位符处理
+        # 解决的问题: 将文本中的图片/视频占位符映射为特定的 ID.
         prompt_ids, _ = self.template.mm_plugin.process_token_ids(
             prompt_ids, None, images, videos, audios, self.tokenizer, self.processor
         )
@@ -101,6 +124,12 @@ class PairwiseDatasetProcessor(DatasetProcessor):
         [101, 102]
         """
 
+        # 5. 智能截断策略 (Critical!)
+        # 为什么要这么写:
+        # - 使用 max(len(chosen_ids), len(rejected_ids)) 作为 Response 的参考长度.
+        # - 核心逻辑: 回复(Response)包含偏好信息, 比问题(Prompt)更重要.
+        # - 解决的问题: 当总长超过 cutoff_len 时, infer_seqlen 确保 Prompt 部分在两个对子中被截断到相同的长度,
+        #   避免因为 Prompt 长度不同导致模型计算偏好损失时出现偏差.
         # consider the response is more important
         source_len, target_len = infer_seqlen(
             len(prompt_ids), max(len(chosen_ids), len(rejected_ids)), self.data_args.cutoff_len
@@ -115,6 +144,10 @@ class PairwiseDatasetProcessor(DatasetProcessor):
         chosen_ids = chosen_ids[:target_len]
         rejected_ids = rejected_ids[:target_len]
 
+        # 6. 构造最终输入与标签 (Label Masking)
+        # 为什么要用 IGNORE_INDEX (-100):
+        # 这是 PyTorch CrossEntropyLoss 的默认忽略值.
+        # 解决的问题: 模型训练时只对 Response(回答)产生的 Loss 进行优化, 不为 Prompt(已知的问题)负责.
         chosen_input_ids = prompt_ids + chosen_ids
         chosen_labels = [IGNORE_INDEX] * source_len + chosen_ids
         rejected_input_ids = prompt_ids + rejected_ids
@@ -123,6 +156,9 @@ class PairwiseDatasetProcessor(DatasetProcessor):
 
     def preprocess_dataset(self, examples: dict[str, list[Any]]) -> dict[str, list[Any]]:
         """
+        批量预处理入口.
+        解决的问题: 将 HuggingFace Datasets 读取的原始字典批量映射为训练用的张量列.
+
         print(examples)
         {
             "_prompt": [[{"role": "user", "content": "法国的首都是哪里?"}]],
