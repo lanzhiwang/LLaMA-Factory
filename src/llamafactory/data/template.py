@@ -388,6 +388,7 @@ class Template:
 
         modelfile += "PARAMETER num_ctx 4096\n"
         return modelfile
+
 r"""
 高级研究员视角下的架构解析:
 
