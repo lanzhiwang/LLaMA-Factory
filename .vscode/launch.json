@@ -8,11 +8,11 @@
             "name": "llama-factory-debug",
             "type": "debugpy",
             "request": "launch",
-            "program": "/root/miniconda3/envs/llamafactory/bin/llamafactory-cli",
+            "program": "/root/anaconda3/envs/llamafactory/bin/llamafactory-cli",
             "args": [
                 "train",
                 "examples/train_lora/qwen3_lora_sft.yaml",
-                "model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507"
+                "model_name_or_path=/root/huzhi/LLaMA-Factory/models/Qwen/Qwen3-4B-Instruct-2507"
             ],
             "env": {
                 "CUDA_VISIBLE_DEVICES": "1"

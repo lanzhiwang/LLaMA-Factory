@@ -106,6 +106,10 @@ def _load_single_dataset(
         # [解决的问题]: 支持用户传入单一文件或包含多个数据的文件夹.
         data_files = []
         local_path = os.path.join(data_args.dataset_dir, dataset_attr.dataset_name)
+        """
+        print(local_path)
+        data/identity.json
+        """
 
         # 如果路径是目录
         if os.path.isdir(local_path):  # is directory
@@ -117,11 +121,22 @@ def _load_single_dataset(
             data_files.append(local_path)
         else:
             raise ValueError(f"File {local_path} not found.")
+        """
+        print(data_files)
+        ['data/identity.json']
+
+        print(os.path.splitext("data/identity.json"))
+        ('data/identity', '.json')
+        """
 
         # 3. 自动识别文件格式 (File Extension Inference)
         # [为什么要这么写]: 通过后缀名自动推断 datasets 库所需的加载器类型(json/csv等).
         # [解决的问题]: 防止用户在一个数据集目录下混用不同格式的文件, 确保加载的一致性.
         data_path = FILEEXT2TYPE.get(os.path.splitext(data_files[0])[-1][1:], None)
+        """
+        print(data_path)
+        json
+        """
         if data_path is None:
             raise ValueError("Allowed file types: {}.".format(",".join(FILEEXT2TYPE.keys())))
 
@@ -235,6 +250,11 @@ def _get_merged_dataset(
     return_dict: bool = False,
 ) -> Union["Dataset", "IterableDataset", dict[str, "Dataset"]] | None:
     r"""
+    print(dataset_names)
+    ['identity', 'alpaca_en_demo']
+    print(return_dict)
+    False
+
     Return the merged datasets in the standard format.
 
     _get_merged_dataset 函数不仅是简单的数据加载器, 它实际上承担了数据合规性检查、多源异构数据整合、以及评估策略路由等多重职责.
@@ -395,6 +415,319 @@ def get_dataset(
     processor: Optional["ProcessorMixin"] = None,
 ) -> "DatasetModule":
     r"""
+    template = Template(
+        format_user=StringFormatter(
+            slots=["<|im_start|>user\n{{content}}<|im_end|>\n<|im_start|>assistant\n"],
+            tool_format=None,
+        ),
+        format_assistant=StringFormatter(
+            slots=["{{content}}<|im_end|>\n"], tool_format=None
+        ),
+        format_system=StringFormatter(
+            slots=["<|im_start|>system\n{{content}}<|im_end|>\n"], tool_format=None
+        ),
+        format_function=FunctionFormatter(
+            slots=["{{content}}<|im_end|>\n"], tool_format="qwen"
+        ),
+        format_observation=StringFormatter(
+            slots=[
+                "<|im_start|>user\n<tool_response>\n{{content}}\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+            ],
+            tool_format=None,
+        ),
+        format_tools=ToolFormatter(slots=[], tool_format="qwen"),
+        format_prefix=EmptyFormatter(slots=[], tool_format=None),
+        default_system="",
+        stop_words=["<|im_end|>"],
+        thought_words=("<think>\n", "\n</think>\n\n"),
+        tool_call_words=("<tool_call>", "</tool_call>"),
+        efficient_eos=False,
+        replace_eos=True,
+        replace_jinja_template=False,
+        enable_thinking=True,
+        mm_plugin=BasePlugin(
+            image_token=None, video_token=None, audio_token=None, expand_mm_tokens=True
+        ),
+    )
+    model_args = ModelArguments(
+        model_name_or_path="/root/huzhi/LLaMA-Factory/models/Qwen/Qwen3-4B-Instruct-2507",
+        adapter_name_or_path=None,
+        adapter_folder=None,
+        cache_dir=None,
+        use_fast_tokenizer=True,
+        resize_vocab=False,
+        split_special_tokens=False,
+        add_tokens=None,
+        add_special_tokens=None,
+        new_special_tokens_config=None,
+        init_special_tokens="noise_init",
+        model_revision="main",
+        low_cpu_mem_usage=True,
+        rope_scaling=None,
+        flash_attn="<AttentionFunction.AUTO: 'auto'>",
+        shift_attn=False,
+        mixture_of_depths=None,
+        use_unsloth=False,
+        use_unsloth_gc=False,
+        enable_liger_kernel=False,
+        moe_aux_loss_coef=None,
+        disable_gradient_checkpointing=False,
+        use_reentrant_gc=True,
+        upcast_layernorm=False,
+        upcast_lmhead_output=False,
+        train_from_scratch=False,
+        infer_backend="<EngineName.HF: 'huggingface'>",
+        offload_folder="offload",
+        use_kv_cache=True,
+        use_v1_kernels=False,
+        infer_dtype="auto",
+        hf_hub_token=None,
+        ms_hub_token=None,
+        om_hub_token=None,
+        print_param_status=False,
+        trust_remote_code=True,
+        quantization_method="<QuantizationMethod.BNB: 'bnb'>",
+        quantization_bit=None,
+        quantization_type="nf4",
+        double_quantization=True,
+        quantization_device_map=None,
+        fp8=False,
+        fp8_backend="auto",
+        fp8_enable_fsdp_float8_all_gather=False,
+        image_max_pixels=589824,
+        image_min_pixels=1024,
+        image_do_pan_and_scan=False,
+        crop_to_patches=False,
+        video_max_pixels=65536,
+        video_min_pixels=256,
+        video_fps=2.0,
+        video_maxlen=128,
+        use_audio_in_video=False,
+        audio_sampling_rate=16000,
+        export_dir=None,
+        export_size=5,
+        export_device="cpu",
+        export_quantization_bit=None,
+        export_quantization_dataset=None,
+        export_quantization_nsamples=128,
+        export_quantization_maxlen=1024,
+        export_legacy_format=False,
+        export_hub_model_id=None,
+        use_kt=False,
+        kt_optimize_rule=None,
+        cpu_infer=32,
+        chunk_size=8192,
+        mode="normal",
+        kt_maxlen=4096,
+        kt_use_cuda_graph=True,
+        kt_mode="normal",
+        kt_force_think=False,
+        vllm_maxlen=4096,
+        vllm_gpu_util=0.7,
+        vllm_enforce_eager=False,
+        vllm_max_lora_rank=32,
+        vllm_config=None,
+        sglang_maxlen=4096,
+        sglang_mem_fraction=0.7,
+        sglang_tp_size=-1,
+        sglang_config=None,
+        sglang_lora_backend="triton",
+        compute_dtype=torch.bfloat16,
+        device_map={"": device(type="cuda", index=0)},
+        model_max_length=2048,
+        block_diag_attn=False,
+    )
+    data_args = DataArguments(
+        template="qwen3_nothink",
+        dataset=["identity", "alpaca_en_demo"],
+        eval_dataset=None,
+        dataset_dir="data",
+        media_dir="data",
+        cutoff_len=2048,
+        train_on_prompt=False,
+        mask_history=False,
+        streaming=False,
+        buffer_size=16384,
+        mix_strategy="concat",
+        interleave_probs=None,
+        overwrite_cache=False,
+        preprocessing_batch_size=1000,
+        preprocessing_num_workers=16,
+        max_samples=1000,
+        eval_num_beams=None,
+        ignore_pad_token_for_loss=True,
+        val_size=0.0,
+        eval_on_each_dataset=False,
+        packing=False,
+        neat_packing=False,
+        tool_format=None,
+        default_system=None,
+        enable_thinking=True,
+        tokenized_path=None,
+        data_shared_file_system=False,
+    )
+    training_args = TrainingArguments(
+        _n_gpu=1,
+        accelerator_config={
+            "split_batches": False,
+            "dispatch_batches": None,
+            "even_batches": True,
+            "use_seedable_sampler": True,
+            "non_blocking": False,
+            "gradient_accumulation_kwargs": None,
+            "use_configured_state": False,
+        },
+        adafactor=False,
+        adam_beta1=0.9,
+        adam_beta2=0.999,
+        adam_epsilon=1e-08,
+        auto_find_batch_size=False,
+        average_tokens_across_devices=True,
+        batch_eval_metrics=False,
+        bf16=True,
+        bf16_full_eval=False,
+        data_seed=None,
+        dataloader_drop_last=False,
+        dataloader_num_workers=4,
+        dataloader_persistent_workers=False,
+        dataloader_pin_memory=True,
+        dataloader_prefetch_factor=None,
+        ddp_backend=None,
+        ddp_broadcast_buffers=None,
+        ddp_bucket_cap_mb=None,
+        ddp_find_unused_parameters=None,
+        ddp_timeout=180000000,
+        debug=[],
+        deepspeed=None,
+        disable_tqdm=False,
+        do_eval=False,
+        do_predict=False,
+        do_train=True,
+        eval_accumulation_steps=None,
+        eval_delay=0,
+        eval_do_concat_batches=True,
+        eval_on_start=False,
+        eval_steps=None,
+        eval_strategy="IntervalStrategy.NO",  #
+        eval_use_gather_object=False,
+        fp16=False,
+        fp16_backend="auto",  #
+        fp16_full_eval=False,
+        fp16_opt_level="O1",  #
+        fsdp=[],
+        fsdp_config={
+            "min_num_params": 0,
+            "xla": False,
+            "xla_fsdp_v2": False,
+            "xla_fsdp_grad_ckpt": False,
+        },
+        fsdp_min_num_params=0,
+        fsdp_transformer_layer_cls_to_wrap=None,
+        full_determinism=False,
+        generation_config=None,
+        generation_max_length=2048,
+        generation_num_beams=None,
+        gradient_accumulation_steps=8,
+        gradient_checkpointing=False,
+        gradient_checkpointing_kwargs=None,
+        greater_is_better=None,
+        group_by_length=False,
+        half_precision_backend="auto",  #
+        hub_always_push=False,
+        hub_model_id=None,
+        hub_private_repo=None,
+        hub_revision=None,
+        hub_strategy="HubStrategy.EVERY_SAVE",  #
+        hub_token="<HUB_TOKEN>",  #
+        ignore_data_skip=False,
+        include_for_metrics=[],
+        include_inputs_for_metrics=False,
+        include_num_input_tokens_seen="no",  #
+        include_tokens_per_second=False,
+        jit_mode_eval=False,
+        label_names=["labels"],
+        label_smoothing_factor=0.0,
+        learning_rate=0.0001,
+        length_column_name="length",  #
+        liger_kernel_config=None,
+        load_best_model_at_end=False,
+        local_rank=0,
+        log_level="passive",  #
+        log_level_replica="warning",  #
+        log_on_each_node=True,
+        logging_dir="saves/qwen3-4b/lora/sft/runs/Feb14_21-45-52_k8s-a40-node02",  #
+        logging_first_step=False,
+        logging_nan_inf_filter=True,
+        logging_steps=10,
+        logging_strategy="IntervalStrategy.STEPS",  #
+        lr_scheduler_kwargs={},
+        lr_scheduler_type="SchedulerType.COSINE",  #
+        max_grad_norm=1.0,
+        max_steps=-1,
+        metric_for_best_model=None,
+        mp_parameters=None,  #
+        neftune_noise_alpha=None,
+        no_cuda=False,
+        num_train_epochs=3.0,
+        optim="OptimizerNames.ADAMW_TORCH_FUSED",  #
+        optim_args=None,
+        optim_target_modules=None,
+        output_dir="saves/qwen3-4b/lora/sft",  #
+        overwrite_output_dir=True,
+        parallelism_config=None,
+        past_index=-1,
+        per_device_eval_batch_size=8,
+        per_device_train_batch_size=1,
+        placement_strategy="PACK",  #
+        predict_with_generate=False,
+        prediction_loss_only=False,
+        project="huggingface",  #
+        push_to_hub=False,
+        push_to_hub_model_id=None,
+        push_to_hub_organization=None,
+        push_to_hub_token="<PUSH_TO_HUB_TOKEN>",  #
+        ray_init_kwargs=None,
+        ray_num_workers=1,
+        ray_run_name=None,
+        ray_scope="last",  #
+        ray_storage_filesystem=None,
+        ray_storage_path="./saves",  #
+        remove_unused_columns=False,
+        report_to=[],
+        resources_per_worker={"GPU": 1},
+        restore_callback_states_from_checkpoint=False,
+        resume_from_checkpoint=None,
+        run_name=None,
+        save_on_each_node=False,
+        save_only_model=False,
+        save_safetensors=True,
+        save_steps=500,
+        save_strategy="SaveStrategy.STEPS",  #
+        save_total_limit=None,
+        seed=42,
+        skip_memory_metrics=True,
+        sortish_sampler=False,
+        tf32=None,
+        torch_compile=False,
+        torch_compile_backend=None,
+        torch_compile_mode=None,
+        torch_empty_cache_steps=None,
+        torchdynamo=None,
+        tpu_metrics_debug=False,
+        tpu_num_cores=None,
+        trackio_space_id="trackio",  #
+        use_cpu=False,
+        use_legacy_prediction_loop=False,
+        use_liger_kernel=False,
+        use_mps_device=False,
+        warmup_ratio=0.1,
+        warmup_steps=0,
+        weight_decay=0.0,
+    )
+    stage = "sft"
+    tokenizer = "Qwen2TokenizerFast"
+    processor = None
+
     Get the train dataset and optionally gets the evaluation dataset.
 
     在大型 LLM 微调工程中, 数据处理往往是最大的瓶颈.
@@ -463,6 +796,15 @@ def get_dataset(
             stage,
             return_dict=data_args.eval_on_each_dataset,
         )
+    """
+    print(dataset)
+    Dataset({
+        features: ['_prompt', '_response', '_system', '_tools', '_images', '_videos', '_audios'],
+        num_rows: 1090
+    })
+    print(eval_dataset)
+    None
+    """
 
     # 3. 数据集预处理与分词 (Tokenization Pipeline)
     # [为什么要这么写]: 再次使用 `main_process_first` 保护预处理过程.
@@ -472,6 +814,15 @@ def get_dataset(
         # 处理数据集划分(如果没有显式的验证集, 则根据 val_size 比例从训练集中切分)
         # move front to make sure eval_dataset(if contain or split) can preprocessed appropriately
         train_dict, eval_dict = split_dataset(dataset, eval_dataset, data_args, seed=training_args.seed)
+        """
+        print(train_dict)
+        {'train': Dataset({
+            features: ['_prompt', '_response', '_system', '_tools', '_images', '_videos', '_audios'],
+            num_rows: 1090
+        })}
+        print(eval_dict)
+        {}
+        """
 
         # 对训练集进行预处理: 将原始对话转为 input_ids 和 labels
         if "train" in train_dict:

@@ -91,7 +91,15 @@ class DatasetAttr:
 
 
 def get_dataset_list(dataset_names: list[str] | None, dataset_dir: str | dict) -> list["DatasetAttr"]:
-    r"""Get the attributes of the datasets."""
+    r"""
+    Get the attributes of the datasets.
+
+
+    print(dataset_names)
+    ['identity', 'alpaca_en_demo']
+    print(dataset_dir)
+    data
+    """
     if dataset_names is None:
         dataset_names = []
 
@@ -104,6 +112,10 @@ def get_dataset_list(dataset_names: list[str] | None, dataset_dir: str | dict) -
             config_path = hf_hub_download(repo_id=dataset_dir[7:], filename=DATA_CONFIG, repo_type="dataset")
         else:
             config_path = os.path.join(dataset_dir, DATA_CONFIG)
+            """
+            print(config_path)
+            data/dataset_info.json
+            """
 
         try:
             with open(config_path) as f:
@@ -128,6 +140,17 @@ def get_dataset_list(dataset_names: list[str] | None, dataset_dir: str | dict) -
         has_hf_url = "hf_hub_url" in dataset_info[name]
         has_ms_url = "ms_hub_url" in dataset_info[name]
         has_om_url = "om_hub_url" in dataset_info[name]
+        """
+        print(dataset_info[name])
+        {'file_name': 'identity.json'}
+
+        print(has_hf_url)
+        False
+        print(has_ms_url)
+        False
+        print(has_om_url)
+        False
+        """
 
         if has_hf_url or has_ms_url or has_om_url:
             if has_ms_url and (use_modelscope() or not has_hf_url):
@@ -142,8 +165,17 @@ def get_dataset_list(dataset_names: list[str] | None, dataset_dir: str | dict) -
             dataset_attr = DatasetAttr("cloud_file", dataset_name=dataset_info[name]["cloud_file_name"])
         else:
             dataset_attr = DatasetAttr("file", dataset_name=dataset_info[name]["file_name"])
+            """
+            print(dataset_attr)
+            DatasetAttr(load_from='file', dataset_name='identity.json', formatting='alpaca', ranking=False, subset=None, split='train', folder=None, num_samples=None, system=None, tools=None, images=None, videos=None, audios=None, chosen=None, rejected=None, kto_tag=None, prompt='instruction', query='input', response='output', history=None, messages='conversations', role_tag='from', content_tag='value', user_tag='human', assistant_tag='gpt', observation_tag='observation', function_tag='function_call', system_tag='system')
+            """
 
         dataset_attr.join(dataset_info[name])
+        """
+        print(dataset_attr)
+        DatasetAttr(load_from='file', dataset_name='identity.json', formatting='alpaca', ranking=False, subset=None, split='train', folder=None, num_samples=None, system=None, tools=None, images=None, videos=None, audios=None, chosen=None, rejected=None, kto_tag=None, prompt='instruction', query='input', response='output', history=None, messages='conversations', role_tag='from', content_tag='value', user_tag='human', assistant_tag='gpt', observation_tag='observation', function_tag='function_call', system_tag='system')
+        """
+
         dataset_list.append(dataset_attr)
 
     return dataset_list

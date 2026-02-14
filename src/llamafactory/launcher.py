@@ -66,14 +66,14 @@ def launch():
     # [解决的问题]: 实现了类似 git 或 docker 的多级指令结构, 让一个入口文件可以管理整个微调生命周期.
     """
     print(sys.argv)
-    ['/root/miniconda3/envs/llamafactory/bin/llamafactory-cli', 'train', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507']
+    ['/root/anaconda3/envs/llamafactory/bin/llamafactory-cli', 'train', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/huzhi/LLaMA-Factory/models/Qwen/Qwen3-4B-Instruct-2507']
     """
     command = sys.argv.pop(1) if len(sys.argv) > 1 else "help"
     """
     print(command)
     train
     print(sys.argv)
-    ['/root/miniconda3/envs/llamafactory/bin/llamafactory-cli', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507']
+    ['/root/anaconda3/envs/llamafactory/bin/llamafactory-cli', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/huzhi/LLaMA-Factory/models/Qwen/Qwen3-4B-Instruct-2507']
     """
 
     # 4. 强制分布式加速策略 (Force Distributed Strategy)

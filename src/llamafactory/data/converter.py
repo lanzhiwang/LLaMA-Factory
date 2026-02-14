@@ -408,6 +408,10 @@ def align_dataset(
     _audios: []
     """
     column_names = list(next(iter(dataset)).keys())
+    """
+    print(column_names)
+    ['instruction', 'input', 'output']
+    """
     kwargs = {}
     if not data_args.streaming:
         kwargs = dict(
@@ -415,8 +419,16 @@ def align_dataset(
             load_from_cache_file=(not data_args.overwrite_cache) or (training_args.local_process_index != 0),
             desc="Converting format of dataset",
         )
+    """
+    print(kwargs)
+    {'num_proc': 16, 'load_from_cache_file': True, 'desc': 'Converting format of dataset'}
+    """
 
     dataset_converter = get_dataset_converter(dataset_attr.formatting, dataset_attr, data_args)
+    """
+    print(dataset_converter)
+    AlpacaDatasetConverter(dataset_attr=DatasetAttr(load_from='file', dataset_name='identity.json', formatting='alpaca', ranking=False, subset=None, split='train', folder=None, num_samples=None, system=None, tools=None, images=None, videos=None, audios=None, chosen=None, rejected=None, kto_tag=None, prompt='instruction', query='input', response='output', history=None, messages='conversations', role_tag='from', content_tag='value', user_tag='human', assistant_tag='gpt', observation_tag='observation', function_tag='function_call', system_tag='system'), data_args=DataArguments(template='qwen3_nothink', dataset=['identity', 'alpaca_en_demo'], eval_dataset=None, dataset_dir='data', media_dir='data', cutoff_len=2048, train_on_prompt=False, mask_history=False, streaming=False, buffer_size=16384, mix_strategy='concat', interleave_probs=None, overwrite_cache=False, preprocessing_batch_size=1000, preprocessing_num_workers=16, max_samples=1000, eval_num_beams=None, ignore_pad_token_for_loss=True, val_size=0.0, eval_on_each_dataset=False, packing=False, neat_packing=False, tool_format=None, default_system=None, enable_thinking=True, tokenized_path=None, data_shared_file_system=False))
+    """
     return dataset.map(
         dataset_converter,
         batched=False,

@@ -675,6 +675,38 @@ def parse_template(tokenizer: "PreTrainedTokenizer") -> "Template":
 
 
 def get_template_and_fix_tokenizer(tokenizer: "PreTrainedTokenizer", data_args: "DataArguments") -> "Template":
+    """
+    print(data_args)
+    DataArguments(
+        template='qwen3_nothink',
+        dataset=['identity', 'alpaca_en_demo'],
+        eval_dataset=None,
+        dataset_dir='data',
+        media_dir='data',
+        cutoff_len=2048,
+        train_on_prompt=False,
+        mask_history=False,
+        streaming=False,
+        buffer_size=16384,
+        mix_strategy='concat',
+        interleave_probs=None,
+        overwrite_cache=False,
+        preprocessing_batch_size=1000,
+        preprocessing_num_workers=16,
+        max_samples=1000,
+        eval_num_beams=None,
+        ignore_pad_token_for_loss=True,
+        val_size=0.0,
+        eval_on_each_dataset=False,
+        packing=False,
+        neat_packing=False,
+        tool_format=None,
+        default_system=None,
+        enable_thinking=True,
+        tokenized_path=None,
+        data_shared_file_system=False
+    )
+    """
     r"""Get chat template and fixes the tokenizer."""
     if data_args.template is None:
         if isinstance(tokenizer.chat_template, str):
