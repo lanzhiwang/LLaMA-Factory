@@ -243,6 +243,14 @@ class FunctionFormatter(StringFormatter):
                 regex = re.compile(rf"{re.escape(thought_words[0])}(.*?){re.escape(thought_words[1])}", re.DOTALL)
                 thought_match = re.search(regex, content)
 
+            """
+            print(thought_match)
+            <re.Match object; span=(1, 75), match="<thought>\n用户想知道北京的天气. 我应该调用 get_weather 工具, 参数是 >
+            print(thought_match.group(0))
+            <thought>
+            用户想知道北京的天气. 我应该调用 get_weather 工具, 参数是 city='Beijing'.
+            </thought>
+            """
             if thought_match:
                 # 移除思考部分, 剩下的视为 JSON
                 json_part = content.replace(thought_match.group(0), "")
@@ -262,6 +270,12 @@ class FunctionFormatter(StringFormatter):
             """
             # 使用工具处理器将 FunctionCall 对象转化为目标模板格式的字符串
             function_str = self.tool_utils.function_formatter(functions)
+            """
+            print(function_str)
+            <tool_call>
+            {"name": "get_weather", "arguments": {"city": "Beijing", "unit": "celsius"}}
+            </tool_call>
+            """
             if thought_match:
                 # 重新拼回思考部分
                 function_str = thought_match.group(0) + function_str
@@ -273,6 +287,14 @@ class FunctionFormatter(StringFormatter):
             function_str = thought_content + function_str
 
         # 最后复用 StringFormatter 的逻辑, 将其填充进模板槽位(如添加 Assistant 前缀)
+        """
+        print(function_str)
+        <thought>
+        用户想知道北京的天气. 我应该调用 get_weather 工具, 参数是 city='Beijing'.
+        </thought><tool_call>
+        {"name": "get_weather", "arguments": {"city": "Beijing", "unit": "celsius"}}
+        </tool_call>
+        """
         return super().apply(content=function_str)
 
 
