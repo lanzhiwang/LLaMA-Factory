@@ -239,11 +239,45 @@ class Llama3ToolUtils(ToolUtils):
     @override
     @staticmethod
     def tool_formatter(tools: list[dict[str, Any]]) -> str:
+        """
+        print(tools)
+        [{'name': 'get_weather', 'description': 'Get the current weather in a given location', 'parameters': {'type': 'object', 'properties': {'location': {'type': 'string'}}}}]
+        """
+
         date = datetime.now().strftime("%d %b %Y")
+        """
+        print(date)
+        14 Feb 2026
+        """
+
         tool_text = ""
         for tool in tools:
             wrapped_tool = tool if tool.get("type") == "function" else {"type": "function", "function": tool}
+            """
+            print(wrapped_tool)
+            {'type': 'function', 'function': {'name': 'get_weather', 'description': 'Get the current weather in a given location', 'parameters': {'type': 'object', 'properties': {'location': {'type': 'string'}}}}}
+            """
             tool_text += json.dumps(wrapped_tool, indent=4, ensure_ascii=False) + "\n\n"
+            """
+            print(tool_text)
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "description": "Get the current weather in a given location",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            """
 
         return LLAMA3_TOOL_PROMPT.format(date=date, tool_text=tool_text)
 
@@ -331,10 +365,6 @@ class MiniMaxM2ToolUtils(ToolUtils):
     @override
     @staticmethod
     def function_formatter(functions: list["FunctionCall"]) -> str:
-        """
-        print(functions)
-        [FunctionCall(name='get_weather', arguments='{"city": "上海", "unit": "celsius"}')]
-        """
         function_texts = []
         for func in functions:
             name, arguments = func.name, json.loads(func.arguments)
@@ -415,32 +445,6 @@ class QwenToolUtils(ToolUtils):
     @override
     @staticmethod
     def tool_formatter(tools: list[dict[str, Any]]) -> str:
-        """
-        print(tools)
-        [
-            {
-                'type': 'function',
-                'function': {
-                    'name': 'get_weather',
-                    'description': '获取指定城市的实时天气',
-                    'parameters': {
-                        'type': 'object',
-                        'properties': {
-                            'city': {
-                                'type': 'string',
-                                'description': '城市名称, 如: 北京'
-                            },
-                            'unit': {
-                                'type': 'string',
-                                'enum': ['celsius', 'fahrenheit']
-                            }
-                        },
-                        'required': ['city']
-                    }
-                }
-            }
-        ]
-        """
         tool_text = ""
         for tool in tools:
             wrapped_tool = tool if tool.get("type") == "function" else {"type": "function", "function": tool}
@@ -451,10 +455,18 @@ class QwenToolUtils(ToolUtils):
     @override
     @staticmethod
     def function_formatter(functions: list["FunctionCall"]) -> str:
+        """
+        print(functions)
+        [FunctionCall(name='get_weather', arguments='{"city": "Beijing", "unit": "celsius"}')]
+        """
         function_texts = [
             json.dumps({"name": name, "arguments": json.loads(arguments)}, ensure_ascii=False)
             for name, arguments in functions
         ]
+        """
+        print(function_texts)
+        ['{"name": "get_weather", "arguments": {"city": "Beijing", "unit": "celsius"}}']
+        """
         return "\n".join([f"<tool_call>\n{text}\n</tool_call>" for text in function_texts])
 
     @override
@@ -466,20 +478,12 @@ class QwenToolUtils(ToolUtils):
             return content
 
         results = []
-        """
-        print(tool_match)
-        ['\n{"name": "get_weather", "arguments": {"city": "上海"}}\n']
-        """
         for tool in tool_match:
             try:
                 tool = json.loads(tool.strip())
             except json.JSONDecodeError:
                 return content
 
-            """
-            print(tool)
-            {'name': 'get_weather', 'arguments': {'city': '上海'}}
-            """
             if "name" not in tool or "arguments" not in tool:
                 return content
 

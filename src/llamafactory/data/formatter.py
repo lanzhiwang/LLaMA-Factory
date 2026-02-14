@@ -306,20 +306,22 @@ class ToolFormatter(Formatter):
     同时也负责从模型推理结果中通过 extract 方法反向提取工具调用.
     """
     def __post_init__(self):
-        """
-        print(self.slots)
-        []
-
-        print(self.tool_format)
-        default
-        """
         self.tool_utils = get_tool_utils(self.tool_format)
 
     @override
     def apply(self, **kwargs) -> SLOTS:
+        """
+        print(kwargs)
+        {'content': '[{"name": "get_weather", "description": "Get the current weather in a given location", "parameters": {"type": "object", "properties": {"location": {"type": "string"}}}}]'}
+        """
+
         content = kwargs.pop("content")
         try:
             tools = json.loads(content)
+            """
+            print(tools)
+            [{'name': 'get_weather', 'description': 'Get the current weather in a given location', 'parameters': {'type': 'object', 'properties': {'location': {'type': 'string'}}}}]
+            """
             # 调用 tool_utils 将工具 JSON 数组转化为特定的模板描述(如 Markdown 表格或特定 YAML)
             return [self.tool_utils.tool_formatter(tools) if len(tools) != 0 else ""]
         except json.JSONDecodeError:

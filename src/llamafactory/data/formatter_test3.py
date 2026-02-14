@@ -1,4 +1,4 @@
-from collections import namedtuple
+# from collections import namedtuple
 from llamafactory.data.formatter import FunctionFormatter
 
 # 模拟 FunctionCall 对象
