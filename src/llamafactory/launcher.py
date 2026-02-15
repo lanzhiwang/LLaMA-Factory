@@ -92,7 +92,7 @@ def launch():
     is_env_enabled("FORCE_TORCHRUN")
     False
     print(get_device_count())
-    2
+    1
     print(not use_ray())
     True
     print(not use_kt())
