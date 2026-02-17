@@ -127,7 +127,7 @@ def launch():
         print(node_rank)
         0
         print(nproc_per_node)
-        2
+        8
         print(master_addr)
         127.0.0.1
         print(master_port)
@@ -157,67 +157,63 @@ def launch():
         print(env)
         environ({
             'SHELL': '/bin/bash',
-            'ROS_VERSION': '2',
             'COLORTERM': 'truecolor',
-            'VSCODE_DEBUGPY_ADAPTER_ENDPOINTS': '/root/.vscode-server/extensions/ms-python.debugpy-2025.18.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-c426149082621ac5.txt',
-            'TERM_PROGRAM_VERSION': '1.107.1',
-            'CONDA_EXE': '/root/miniconda3/bin/conda',
-            'ROS_PYTHON_VERSION': '3',
+            'VSCODE_DEBUGPY_ADAPTER_ENDPOINTS': '/root/.vscode-server/extensions/ms-python.debugpy-2025.18.0-linux-x64/.noConfigDebugAdapterEndpoints/endpoint-b26c1110449772ea.txt',
+            'TERM_PROGRAM_VERSION': '1.109.3',
+            'CONDA_EXE': '/root/anaconda3/bin/conda',
+            '_CE_M': '',
             'PYDEVD_DISABLE_FILE_VALIDATION': '1',
-            'OLLAMA_MODELS': '/home/zhanghao/edu/ollama/model',
-            'PWD': '/root/LLaMA-Factory',
+            'PWD': '/root/huzhi/LLaMA-Factory',
             'LOGNAME': 'root',
             'XDG_SESSION_TYPE': 'tty',
-            'CONDA_PREFIX': '/root/miniconda3/envs/llamafactory',
+            'CONDA_PREFIX': '/root/anaconda3/envs/llamafactory',
             'BUNDLED_DEBUGPY_PATH': '/root/.vscode-server/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/libs/debugpy',
-            'VSCODE_GIT_ASKPASS_NODE': '/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/node',
+            'VSCODE_GIT_ASKPASS_NODE': '/root/.vscode-server/cli/servers/Stable-b6a47e94e326b5c209d118cf0f994d6065585705/server/node',
             'MOTD_SHOWN': 'pam',
             'HOME': '/root',
             'LANG': 'C.UTF-8',
-            'LS_COLORS': 'rs=0:di=01;36:*.xspf=00;36:',
-            'PYTHONSTARTUP': '/root/.vscode-server/data/User/workspaceStorage/74d13de23a857e1c75719702a79872ec/ms-python.python/pythonrc.py',
+            'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:',
+            'PYTHONSTARTUP': '/root/.vscode-server/data/User/workspaceStorage/eca1abe24da59591d2e5bdba2756f11e/ms-python.python/pythonrc.py',
             'SSL_CERT_DIR': '/usr/lib/ssl/certs',
             'CONDA_PROMPT_MODIFIER': '(llamafactory) ',
-            'AMENT_PREFIX_PATH': '/opt/ros/humble',
-            'GIT_ASKPASS': '/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/extensions/git/dist/askpass.sh',
-            'SSH_CONNECTION': '172.16.66.233 61476 192.168.100.59 22',
+            'GIT_ASKPASS': '/root/.vscode-server/cli/servers/Stable-b6a47e94e326b5c209d118cf0f994d6065585705/server/extensions/git/dist/askpass.sh'
+            'SSH_CONNECTION': '10.122.1.248 49694 172.16.10.51 22',
             'VSCODE_GIT_ASKPASS_EXTRA_ARGS': '',
+            '_CONDA_EXE': '/root/anaconda3/bin/conda',
             'LESSCLOSE': '/usr/bin/lesspipe %s %s',
+            '_CONDA_ROOT': '/root/anaconda3',
             'XDG_SESSION_CLASS': 'user',
-            'PYTHONPATH': '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages',
             'TERM': 'xterm-256color',
             'PYTHON_BASIC_REPL': '1',
-            'VSCODE_NONCE': '71107d5d-cea3-416a-b9e7-b37f99f5df49',
+            '_CE_CONDA': '',
+            'VSCODE_NONCE': 'f4f8e861-b268-46ce-ac55-8b60e85db88c',
             'LESSOPEN': '| /usr/bin/lesspipe %s',
             'USER': 'root',
-            'VSCODE_GIT_IPC_HANDLE': '/run/user/0/vscode-git-79a36f4cb4.sock',
+            'VSCODE_GIT_IPC_HANDLE': '/run/user/0/vscode-git-8a9f5dd91c.sock',
             'CONDA_SHLVL': '2',
             'SHLVL': '2',
-            'XDG_SESSION_ID': '61496',
-            'CONDA_PYTHON_EXE': '/root/miniconda3/bin/python',
-            'LD_LIBRARY_PATH': '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib',
+            'XDG_SESSION_ID': '6318',
+            'CONDA_PYTHON_EXE': '/root/anaconda3/bin/python',
             'XDG_RUNTIME_DIR': '/run/user/0',
             'SSL_CERT_FILE': '/usr/lib/ssl/certs/ca-certificates.crt',
-            'ROS_LOCALHOST_ONLY': '0',
-            'SSH_CLIENT': '172.16.66.233 61476 22',
+            'SSH_CLIENT': '10.122.1.248 49694 22',
             'CONDA_DEFAULT_ENV': 'llamafactory',
-            'LC_TIME': 'C.UTF-8',
-            'VSCODE_GIT_ASKPASS_MAIN': '/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/extensions/git/dist/askpass-main.js',
+            'VSCODE_GIT_ASKPASS_MAIN': '/root/.vscode-server/cli/servers/Stable-b6a47e94e326b5c209d118cf0f994d6065585705/server/extensions/git/dist/askpass-main.js',
             'XDG_DATA_DIRS': '/usr/local/share:/usr/share:/var/lib/snapd/desktop',
-            'BROWSER': '/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/bin/helpers/browser.sh',
-            'PATH': '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/root/.vscode-server/cli/servers/Stable-994fd12f8d3a5aa16f17d42c041e5809167e845a/server/bin/remote-cli:/opt/ros/humble/bin:/root/miniconda3/envs/llamafactory/bin:/root/miniconda3/condabin:/sbin:/usr/sbin:/usr/local/sbin:/usr/lpp/mmfs/bin:/sbin:/usr/sbin:/usr/local/sbin:/usr/lpp/mmfs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/root/.vscode-server/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/scripts/noConfigScripts',
+            'BROWSER': '/root/.vscode-server/cli/servers/Stable-b6a47e94e326b5c209d118cf0f994d6065585705/server/bin/helpers/browser.sh',
+            'PATH': '/root/.vscode-server/cli/servers/Stable-b6a47e94e326b5c209d118cf0f994d6065585705/server/bin/remote-cli:/root/anaconda3/envs/llamafactory/bin:/root/anaconda3/condabin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/root/.vscode-server/extensions/ms-python.debugpy-2025.18.0-linux-x64/bundled/scripts/noConfigScripts',
             'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/0/bus',
-            'CONDA_PREFIX_1': '/root/miniconda3',
-            'ROS_DISTRO': 'humble',
+            'CONDA_PREFIX_1': '/root/anaconda3',
+            'OLDPWD': '/root/huzhi/LLaMA-Factory',
             'TERM_PROGRAM': 'vscode',
-            'VSCODE_IPC_HOOK_CLI': '/run/user/0/vscode-ipc-7e31eefd-1326-48ea-8006-de64728185b1.sock',
+            'VSCODE_IPC_HOOK_CLI': '/run/user/0/vscode-ipc-5d6eb4c8-0473-46d7-a4c3-712da3060cca.sock',
             '_': '/usr/bin/env',
-            'OLDPWD': '/root/LLaMA-Factory',
-            'CUDA_VISIBLE_DEVICES': '1,2',
+            'CUDA_VISIBLE_DEVICES': '0,1,2,3,4,5,6,7',
             'PYTHONIOENCODING': 'UTF-8',
             'PYTHONUNBUFFERED': '1',
             'PYDEVD_USE_FRAME_EVAL': 'NO',
             'DEBUGPY_RUNNING': 'true',
+            'TORCHINDUCTOR_CACHE_DIR': '/tmp/torchinductor_root',
             'PYTORCH_CUDA_ALLOC_CONF': 'expandable_segments:True',
             'TORCH_NCCL_AVOID_RECORD_STREAMS': '1'
         })
@@ -261,7 +257,9 @@ def launch():
             # 标准多卡模式
             # 注意: 不使用 shell=True 是为了防止 Shell 注入攻击, 且更利于信号传递(如 Ctrl+C 停止训练).
             # NOTE: DO NOT USE shell=True to avoid security risk
-            """print((
+            """
+            print(
+                (
                     "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
                     "--master_addr {master_addr} --master_port {master_port} {file_name} {args}"
                 )
@@ -274,8 +272,25 @@ def launch():
                     file_name=__file__,
                     args=" ".join(sys.argv[1:]),
                 )
-                .split())
-            ['torchrun', '--nnodes', '1', '--node_rank', '0', '--nproc_per_node', '2', '--master_addr', '127.0.0.1', '--master_port', '53559', '/root/LLaMA-Factory/src/llamafactory/launcher.py', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/LLaMA-Factory/models/Qwen3-4B-Instruct-2507']
+            )
+            torchrun --nnodes 1 --node_rank 0 --nproc_per_node 8 --master_addr 127.0.0.1 --master_port 37439 /root/huzhi/LLaMA-Factory/src/llamafactory/launcher.py examples/train_lora/qwen3_lora_sft.yaml model_name_or_path=/root/huzhi/LLaMA-Factory/models/Qwen/Qwen3-4B-Instruct-2507
+
+            print(
+                (
+                    "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
+                    "--master_addr {master_addr} --master_port {master_port} {file_name} {args}"
+                )
+                .format(
+                    nnodes=nnodes,
+                    node_rank=node_rank,
+                    nproc_per_node=nproc_per_node,
+                    master_addr=master_addr,
+                    master_port=master_port,
+                    file_name=__file__,
+                    args=" ".join(sys.argv[1:]),
+                ).split()
+            )
+            ['torchrun', '--nnodes', '1', '--node_rank', '0', '--nproc_per_node', '8', '--master_addr', '127.0.0.1', '--master_port', '37439', '/root/huzhi/LLaMA-Factory/src/llamafactory/launcher.py', 'examples/train_lora/qwen3_lora_sft.yaml', 'model_name_or_path=/root/huzhi/LLaMA-Factory/models/Qwen/Qwen3-4B-Instruct-2507']
             """
             process = subprocess.run(
                 (
