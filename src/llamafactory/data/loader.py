@@ -204,6 +204,13 @@ def _load_single_dataset(
             # 文件加载模式下, 如果开启流式, 需要后续手动转化
             streaming=data_args.streaming and dataset_attr.load_from != "file",
         )
+        """
+        print(dataset)
+        Dataset({
+            features: ['instruction', 'input', 'output'],
+            num_rows: 91
+        })
+        """
         # 6. 流式加载适配 (Streaming Adaptation)
         # [解决的问题]: 本地大文件如果不转为 IterableDataset, 会一次性加载到内存导致 OOM.
         if data_args.streaming and dataset_attr.load_from == "file":
@@ -302,6 +309,19 @@ def _get_merged_dataset(
         # 4. 单个数据集加载 (Single Source Loading)
         # [为什么要这么写]: 调用底层函数加载单一数据源, 返回统一的 HuggingFace Dataset 对象.
         datasets[dataset_name] = _load_single_dataset(dataset_attr, model_args, data_args, training_args)
+    """
+    print(datasets)
+    {
+        'identity': Dataset({
+            features: ['_prompt', '_response', '_system', '_tools', '_images', '_videos', '_audios'],
+            num_rows: 91
+        }),
+        'alpaca_en_demo': Dataset({
+            features: ['_prompt', '_response', '_system', '_tools', '_images', '_videos', '_audios'],
+            num_rows: 999
+        })
+    }
+    """
 
     # 5. 返回策略分发 (Routing Strategy)
     # [解决的问题]: 平衡"训练效率"与"评测精细度".
@@ -787,6 +807,13 @@ def get_dataset(
         # 加载并合并多个数据集(LLaMA-Factory 支持将多个 json/jsonl 数据动态混合)
         # Union["Dataset", "IterableDataset", dict[str, "Dataset"]] | None
         dataset = _get_merged_dataset(data_args.dataset, model_args, data_args, training_args, stage)
+        """
+        print(dataset)
+        Dataset({
+            features: ['_prompt', '_response', '_system', '_tools', '_images', '_videos', '_audios'],
+            num_rows: 1090
+        })
+        """
         # 加载评估集, 支持对每个评估集进行独立评估(eval_on_each_dataset)
         eval_dataset = _get_merged_dataset(
             data_args.eval_dataset,
@@ -796,15 +823,10 @@ def get_dataset(
             stage,
             return_dict=data_args.eval_on_each_dataset,
         )
-    """
-    print(dataset)
-    Dataset({
-        features: ['_prompt', '_response', '_system', '_tools', '_images', '_videos', '_audios'],
-        num_rows: 1090
-    })
-    print(eval_dataset)
-    None
-    """
+        """
+        print(eval_dataset)
+        None
+        """
 
     # 3. 数据集预处理与分词 (Tokenization Pipeline)
     # [为什么要这么写]: 再次使用 `main_process_first` 保护预处理过程.
@@ -829,6 +851,13 @@ def get_dataset(
             train_dict["train"] = _get_preprocessed_dataset(
                 train_dict["train"], data_args, training_args, stage, template, tokenizer, processor, is_eval=False
             )
+            """
+            print(train_dict)
+            {'train': Dataset({
+                features: ['input_ids', 'attention_mask', 'labels', 'images', 'videos', 'audios'],
+                num_rows: 1090
+            })}
+            """
 
         # 对所有评估集(可能有多个)进行预处理
         for key in eval_dict:
@@ -839,6 +868,15 @@ def get_dataset(
         # 使用 DatasetDict 结构统一管理, 这是符合 Hugging Face Trainer 标准的最佳实践
         # Combine train and eval dictionaries
         dataset_dict = DatasetDict({**train_dict, **eval_dict})
+        """
+        print(dataset_dict)
+        DatasetDict({
+            train: Dataset({
+                features: ['input_ids', 'attention_mask', 'labels', 'images', 'videos', 'audios'],
+                num_rows: 1090
+            })
+        })
+        """
 
         # 4. 数据持久化 (Artifact Persistence)
         # [为什么要这么写]: 如果用户指定了 tokenized_path 且当前是初次运行.

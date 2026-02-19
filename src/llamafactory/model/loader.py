@@ -60,6 +60,10 @@ def _get_init_kwargs(model_args: "ModelArguments") -> dict[str, Any]:
     """
     skip_check_imports()
     model_args.model_name_or_path = try_download_model_from_other_hub(model_args)
+    """
+    print(model_args.model_name_or_path)
+    /root/huzhi/LLaMA-Factory/models/Qwen/Qwen3-4B-Instruct-2507
+    """
     return {
         "trust_remote_code": model_args.trust_remote_code,
         "cache_dir": model_args.cache_dir,
@@ -183,7 +187,51 @@ def load_model(
 ) -> "PreTrainedModel":
     r"""Load pretrained model."""
     init_kwargs = _get_init_kwargs(model_args)
+    """
+    print(init_kwargs)
+    {'trust_remote_code': True, 'cache_dir': None, 'revision': 'main', 'token': None}
+    """
     config = load_config(model_args)
+    """
+    print(config)
+    Qwen3Config {
+        "architectures": [
+            "Qwen3ForCausalLM"
+        ],
+        "attention_bias": false,
+        "attention_dropout": 0.0,
+        "bos_token_id": 151643,
+        "dtype": "bfloat16",
+        "eos_token_id": 151645,
+        "head_dim": 128,
+        "hidden_act": "silu",
+        "hidden_size": 2560,
+        "initializer_range": 0.02,
+        "intermediate_size": 9728,
+        "layer_types": [
+            "full_attention",
+            "full_attention",
+            ...
+        ],
+        "max_position_embeddings": 262144,
+        "max_window_layers": 36,
+        "model_type": "qwen3",
+        "num_attention_heads": 32,
+        "num_hidden_layers": 36,
+        "num_key_value_heads": 8,
+        "rms_norm_eps": 1e-06,
+        "rope_scaling": null,
+        "rope_theta": 5000000,
+        "sliding_window": null,
+        "tie_word_embeddings": true,
+        "transformers_version": "4.57.1",
+        "use_cache": true,
+        "use_sliding_window": false,
+        "vocab_size": 151936
+    }
+    print(config.layer_types)
+    ['full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention', 'full_attention']
+    """
     patch_config(config, tokenizer, model_args, init_kwargs, is_trainable)
     apply_liger_kernel(config, model_args, is_trainable, require_logits=(finetuning_args.stage not in ["pt", "sft"]))
 

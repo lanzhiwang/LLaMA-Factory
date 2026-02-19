@@ -65,6 +65,13 @@ def run_sft(
 
     # 数据集预处理
     dataset_module = get_dataset(template, model_args, data_args, training_args, stage="sft", **tokenizer_module)
+    """
+    print(dataset_module)
+    {'train_dataset': Dataset({
+        features: ['input_ids', 'attention_mask', 'labels', 'images', 'videos', 'audios'],
+        num_rows: 1090
+    })}
+    """
 
     # 模型加载 (支持 LoRA, Full-tuning, 量化加载等)
     model = load_model(tokenizer, model_args, finetuning_args, training_args.do_train)
