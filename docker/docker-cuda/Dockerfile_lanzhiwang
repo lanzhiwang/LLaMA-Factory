@@ -1,0 +1,12 @@
+FROM pytorch/pytorch:2.12.1-cuda12.6-cudnn9-devel
+
+# Use Bash instead of default /bin/sh
+SHELL ["/bin/bash", "-c"]
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the application into the image
+COPY . /app
+
+RUN set -eux && pip install -e ".[dev,metrics,deepspeed]"
