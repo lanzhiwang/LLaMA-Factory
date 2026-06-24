@@ -7,6 +7,8 @@ WORKDIR /workspace
 COPY . /workspace
 
 RUN set -eux && \
+    echo ${PIP_BREAK_SYSTEM_PACKAGES} && \
+    env && \
     ls -al && \
     uv pip install --system -e ".[dev,metrics,deepspeed]" && \
     llamafactory-cli version && \
