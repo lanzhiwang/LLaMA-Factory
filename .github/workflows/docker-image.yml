@@ -65,3 +65,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # build-args: |
+          #   CUDA_VERSION=12.6.3
+          #   UBUNTU_VERSION=22.04
