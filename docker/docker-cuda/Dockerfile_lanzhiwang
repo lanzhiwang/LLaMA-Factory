@@ -29,7 +29,7 @@ COPY . /app
 RUN set -eux && \
     ls -al && \
     pip install uv && \
-    uv pip install -e ".[dev,metrics,deepspeed]" && \
+    uv pip install --system -e ".[dev,metrics,deepspeed]" && \
     llamafactory-cli version && \
     pip cache purge && \
     uv cache clean
