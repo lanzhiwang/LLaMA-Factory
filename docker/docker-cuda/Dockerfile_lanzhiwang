@@ -9,4 +9,4 @@ WORKDIR /app
 # Copy the application into the image
 COPY . /app
 
-RUN set -eux && pip install -e ".[dev,metrics,deepspeed]"
+RUN set -eux && ls -al && pip install uv && uv pip install -e ".[dev,metrics,deepspeed]"
